@@ -129,7 +129,7 @@ export function AustriaMap({ hospitals, onSelect, selectedName }: Props) {
     <div className="space-y-3">
       <svg
         viewBox={`${-0.4} ${-0.2} ${W + 0.8} ${H + 0.4}`}
-        className="w-full h-auto"
+        className="w-full h-auto select-none"
         role="img"
         aria-label="Austria hospital AQI map"
       >
