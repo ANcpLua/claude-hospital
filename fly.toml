@@ -6,7 +6,10 @@ primary_region = "fra"
 [build.args]
 # Public Turnstile site key — safe to commit, inlined into the
 # client bundle by Vite at build time.
-VITE_TURNSTILE_SITE_KEY = "0x4AAAAAADCite1PYePcMoRY"
+# 1x00000000000000000000AA = Cloudflare's public always-pass TEST key.
+# Swap back to the real key (0x4AAAAAADCite1PYePcMoRY) once the
+# widget's Hostname Management includes claude-hospital.fly.dev.
+VITE_TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
 
 [http_service]
 internal_port = 8080
