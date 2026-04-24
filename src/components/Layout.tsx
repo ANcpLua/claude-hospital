@@ -27,11 +27,11 @@ export function Layout() {
             </span>
             <span className="tracking-tight">
               <span className="display text-[17px] text-ink-900 dark:text-ink-100">
-                Six Demos
+                Claude Code
               </span>
               <span className="hidden sm:inline text-ink-400 dark:text-ink-500 font-normal">
                 {" "}
-                · Claude Code in Healthcare
+                in Healthcare
               </span>
             </span>
           </Link>
