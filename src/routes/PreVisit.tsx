@@ -522,6 +522,9 @@ export function PreVisit() {
           </div>
           <div className="flex flex-wrap items-center gap-2 pointer-events-auto">
             <select
+              id="previsit-lang"
+              name="previsit-lang"
+              aria-label="Voice language"
               value={lang}
               onChange={(e) => setLang(e.target.value as "en-US" | "de-DE")}
               className="text-xs border border-white/20 bg-white/10 text-white backdrop-blur-sm rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-white/40"
@@ -598,6 +601,10 @@ export function PreVisit() {
             className="flex flex-wrap gap-2 items-start"
           >
             <textarea
+              id="previsit-draft"
+              name="previsit-draft"
+              aria-label="Message"
+              autoComplete="off"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               disabled={sessionEnded}

@@ -13,17 +13,10 @@ Live: https://claude-hospital.fly.dev
 
 - **Stack:** React 19, Vite 8, TypeScript 6 strict, Tailwind 4. No `any`,
   no `@ts-ignore`, no null-forgiving `!`.
-- **Zero backend.** Static bundle served by nginx. No server-side
-  rendering, no API routes, no shared state.
-- **BYOK LLM only.** Google Gemini is the one supported provider (see
-  `src/lib/llm.ts`). Key in `localStorage["meduni-byok"]`. Never
-  proxied. Requests go browser → `generativelanguage.googleapis.com`.
 - **No LLM call on mount or tab switch.** Every call originates from an
   explicit user click. Results cached per `(route, input-hash)` so a
   repeat click is a cache hit.
-- **No PHI.** All datasets in `src/data/` are synthetic.
-- **No tracking.** Zero analytics, zero cookies beyond the theme + BYOK
-  entries in localStorage.
+- **No PHI.** All datasets in `src/data` are synthetic.
 - **Mobile-first.** Every route must work at 375×812; A11y AA.
 
 ## Routes
@@ -44,19 +37,8 @@ Live: https://claude-hospital.fly.dev
 Installed from the starter tier via shadcn CLI in
 `src/components/react-bits/`. Do not modify these files — they are
 registry-sourced. License key lives in `REACTBITS_LICENSE_KEY` env at
-install time only. Current set: `animated-list`, `count-up`,
+/Users/ancplua/framework/claude-hospital/.env. Current set: `animated-list`, `count-up`,
 `custom-cursor`, `glitch-text`, `shiny-text`, `text-scatter`.
-
-## Design tokens
-
-- Accent: MedUni medical teal `#0891b2` on warm off-white
-  `--color-cream-50`. Route-specific accents allowed (emerald for
-  PostVisit, orange for Inhaler, rose for Postpartum, indigo for
-  MedDuties) — use sparingly.
-- Display type: Source Serif 4 italic (`.display` utility).
-- Body: Inter. Mono: JetBrains Mono.
-- Dark mode: class-based via `@custom-variant dark` on `<html>.dark`,
-  persisted in `localStorage["meduni-theme"]`.
 
 ## Execution protocol
 
@@ -74,4 +56,3 @@ install time only. Current set: `animated-list`, `count-up`,
   `components/TrendChart.tsx`).
 - Comments that restate well-named code.
 - Feature flags for a single-session change.
-- Any provider other than Google Gemini in `src/lib/llm.ts`.

@@ -10,6 +10,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { CountUp } from "../components/react-bits/count-up";
 import TextScatter from "../components/react-bits/text-scatter";
+import SplashCursor from "../components/SplashCursor";
 
 interface Tool {
   readonly to: string;
@@ -80,6 +81,20 @@ const TOOLS: ReadonlyArray<Tool> = [
 export function Home() {
   return (
     <div className="space-y-10">
+      {/* Landing-page only — mounted here (not in Layout) so it unmounts
+          the moment the user navigates to any other route. */}
+      <SplashCursor
+        DENSITY_DISSIPATION={1.5}
+        VELOCITY_DISSIPATION={4}
+        PRESSURE={0.3}
+        CURL={35}
+        SPLAT_RADIUS={0.13}
+        SPLAT_FORCE={9000}
+        COLOR_UPDATE_SPEED={30}
+        SHADING
+        RAINBOW_MODE
+        COLOR="#A855F7"
+      />
       <section className="space-y-3">
         <p className="text-[11px] uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300 font-medium">
           Anthropic webinar · 23 Apr 2026 · re-implementation
