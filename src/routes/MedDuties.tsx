@@ -17,9 +17,6 @@ import {
 import { extractJson } from "../lib/extract";
 import { useLlmAvailable } from "../lib/llm";
 import { WishCalendar } from "../components/WishCalendar";
-import AnimatedList, {
-  type AnimatedListItem,
-} from "../components/react-bits/animated-list";
 
 const DOCS: ReadonlyArray<Doc> = [
   { id: "walker", name: "Dr. Walker" },
@@ -505,25 +502,16 @@ export function MedDuties() {
           </button>
         </form>
         {log.length > 0 && (
-          <div className="max-h-48 overflow-hidden">
-            <AnimatedList
-              items={log.map<AnimatedListItem>((l, i) => ({
-                id: `${i}-${l}`,
-                content: (
-                  <span className="text-xs text-ink-500 dark:text-ink-400">
-                    · {l}
-                  </span>
-                ),
-              }))}
-              animationType="slide"
-              enterFrom="bottom"
-              duration={0.35}
-              itemGap={4}
-              maxItems={12}
-              fadeEdges
-              fadeEdgeSize={24}
-            />
-          </div>
+          <ul className="max-h-48 overflow-y-auto space-y-1 mt-2 border-t border-ink-100 dark:border-ink-800 pt-2">
+            {log.slice(-12).map((l, i) => (
+              <li
+                key={`${i}-${l}`}
+                className="text-xs text-ink-500 dark:text-ink-400 leading-snug"
+              >
+                · {l}
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </div>
