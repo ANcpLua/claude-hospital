@@ -3,9 +3,6 @@ import { ChevronRight, Copy, Download } from "lucide-react";
 import { callLLM, callLLMStream, useLlmAvailable } from "../lib/llm";
 import { POSTPARTUM_NOTES, POSTPARTUM_PATIENT } from "../data/postpartum-notes";
 import { NoteCard, noteTypeLabel } from "../components/NoteCard";
-import AnimatedList, {
-  type AnimatedListItem,
-} from "../components/react-bits/animated-list";
 import TextScatter from "../components/react-bits/text-scatter";
 
 type View = "patient" | "id-consult";
@@ -375,34 +372,21 @@ export function Postpartum() {
         </button>
 
         {notesOpen && (
-          <div className="mt-3">
-            <AnimatedList
-              items={POSTPARTUM_NOTES.map<AnimatedListItem>((n) => ({
-                id: n.id,
-                content: (
-                  <NoteCard
-                    ref={(el) => {
-                      if (el) noteRefs.current.set(n.id, el);
-                      else noteRefs.current.delete(n.id);
-                    }}
-                    note={n}
-                    expanded={expanded.has(n.id)}
-                    highlight={highlightId === n.id}
-                    onToggle={() => toggleNote(n.id)}
-                  />
-                ),
-              }))}
-              animationType="slide"
-              enterFrom="bottom"
-              duration={0.3}
-              itemGap={8}
-              startFrom="top"
-              maxItems={POSTPARTUM_NOTES.length}
-              height="auto"
-              fadeEdges={false}
-              className="!overflow-visible"
-            />
-          </div>
+          <ul className="mt-3 space-y-2">
+            {POSTPARTUM_NOTES.map((n) => (
+              <NoteCard
+                key={n.id}
+                ref={(el) => {
+                  if (el) noteRefs.current.set(n.id, el);
+                  else noteRefs.current.delete(n.id);
+                }}
+                note={n}
+                expanded={expanded.has(n.id)}
+                highlight={highlightId === n.id}
+                onToggle={() => toggleNote(n.id)}
+              />
+            ))}
+          </ul>
         )}
       </section>
     </div>
