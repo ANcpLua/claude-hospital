@@ -1,0 +1,164 @@
+@import "tailwindcss";
+
+/* Tailwind 4 dark-mode strategy — class-based, driven by .dark on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Primary — MedUni medical teal */
+  --color-teal-50: #ecfeff;
+  --color-teal-100: #cffafe;
+  --color-teal-200: #a5f3fc;
+  --color-teal-300: #67e8f9;
+  --color-teal-400: #22d3ee;
+  --color-teal-500: #06b6d4;
+  --color-teal-600: #0891b2;
+  --color-teal-700: #0e7490;
+  --color-teal-800: #155e75;
+  --color-teal-900: #164e63;
+
+  /* Chrome — deep slate navy */
+  --color-ink-50: #f8fafc;
+  --color-ink-100: #f1f5f9;
+  --color-ink-200: #e2e8f0;
+  --color-ink-300: #cbd5e1;
+  --color-ink-400: #94a3b8;
+  --color-ink-500: #64748b;
+  --color-ink-600: #475569;
+  --color-ink-700: #334155;
+  --color-ink-800: #1e293b;
+  --color-ink-900: #0f172a;
+  --color-ink-950: #0a1120;
+
+  /* Warm off-white surfaces */
+  --color-cream-50: #fefdfb;
+  --color-cream-100: #faf7f0;
+  --color-cream-200: #f5efe3;
+
+  /* Semantic (per design-system.md §2) */
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+
+  /* Legacy alias — kept so older code that imports text-wien-red keeps building. */
+  --color-wien-red: #0891b2;
+  --color-wien-red-soft: #22d3ee;
+  --color-wien-red-dim: #0e7490;
+
+  --font-display: "Source Serif 4", "Source Serif Pro", ui-serif, Georgia, serif;
+  --font-body: "Inter", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* Shadows (§5). Dark mode relies on surface elevation, not glow. */
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-ring-focus: 0 0 0 3px color-mix(in srgb, var(--color-teal-600) 40%, transparent);
+}
+
+/* Motion tokens (§4). Kept outside @theme so they don't generate utility classes. */
+:root {
+  --motion-fast: 150ms linear;
+  --motion-panel: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-panel: 0ms;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font-body);
+  font-feature-settings:
+    "ss01" on,
+    "cv11" on;
+  background-color: var(--color-cream-50);
+  color: var(--color-ink-900);
+  transition:
+    background-color 200ms linear,
+    color 200ms linear;
+}
+
+html.dark body {
+  background-color: var(--color-ink-950);
+  color: var(--color-ink-100);
+}
+
+/* Focus ring — §5/§9: teal @ 40% alpha, 3 px */
+*:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-teal-600) 40%, transparent);
+  outline-offset: 2px;
+}
+
+html.dark *:focus-visible {
+  outline-color: color-mix(in srgb, var(--color-teal-400) 40%, transparent);
+}
+
+/* Patient-facing body prose. Per §3, never italicise body — Inter only. */
+.prose-patient {
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.6;
+  font-size: 15px;
+  max-width: 60ch;
+}
+
+/* Display type — italic Source Serif, headings only */
+.display {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Caption */
+.caption {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Mono pill */
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print */
+@media print {
+  nav,
+  .no-print {
+    display: none !important;
+  }
+  .print-a4 {
+    padding: 2cm;
+  }
+}
