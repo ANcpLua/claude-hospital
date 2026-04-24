@@ -4,8 +4,15 @@ primary_region = "fra"
 
 [build]
 [build.args]
-# Public Turnstile site key. Safe to commit — paired secret is a Fly secret.
-VITE_TURNSTILE_SITE_KEY = "0x4AAAAAADCite1PYePcMoRY"
+# Public Turnstile site key. 1x00000000000000000000AA = always-pass
+# test key. Swap to 0x4AAAAAADCite1PYePcMoRY once claude-hospital.fly.dev
+# is in the real widget's Cloudflare Hostname Management.
+VITE_TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
+
+[env]
+# Per-IP sliding window — server/index.ts reads this. 30/hr is too tight
+# when a user is bouncing across six demos.
+IP_LIMIT = "200"
 
 [http_service]
 internal_port = 8080
