@@ -197,7 +197,7 @@ export function AustriaMap({ hospitals, onSelect, selectedName }: Props) {
                   y={cy + 0.035}
                   fontSize={0.1}
                   textAnchor="middle"
-                  className="fill-ink-800 dark:fill-ink-100 font-semibold"
+                  className="fill-ink-800 dark:fill-ink-100 font-semibold pointer-events-none"
                   style={{ fontFamily: "var(--font-body)" }}
                 >
                   {c.members.length}
@@ -217,7 +217,7 @@ export function AustriaMap({ hospitals, onSelect, selectedName }: Props) {
                 y={ty}
                 fontSize={0.11}
                 textAnchor={anchor}
-                className="fill-ink-800 dark:fill-ink-100"
+                className="fill-ink-800 dark:fill-ink-100 pointer-events-none"
                 style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
               >
                 {c.label}
@@ -227,7 +227,7 @@ export function AustriaMap({ hospitals, onSelect, selectedName }: Props) {
                 y={ty + 0.15}
                 fontSize={0.085}
                 textAnchor={anchor}
-                className="fill-ink-500 dark:fill-ink-400"
+                className="fill-ink-500 dark:fill-ink-400 pointer-events-none"
                 style={{ fontFamily: "var(--font-body)" }}
               >
                 AQI {c.aqi}
