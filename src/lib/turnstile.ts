@@ -96,6 +96,8 @@ function ensureWidget(): void {
     widgetId = window.turnstile.render(mountEl, {
         sitekey: SITE_KEY,
         theme: "auto",
+        // Hide the badge on auto-pass; surface only when CF requires interaction.
+        appearance: "interaction-only",
         callback: (token) => deliver(token),
         "error-callback": (err) => fail(new Error(`turnstile: ${err}`)),
         "expired-callback": () => {
