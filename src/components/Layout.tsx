@@ -1,8 +1,6 @@
-import {useEffect, useRef} from "react";
 import {Link, NavLink, Outlet} from "react-router-dom";
 import {Activity, Moon, Settings as SettingsIcon, Sun} from "lucide-react";
 import {useTheme} from "../lib/theme";
-import {mountTurnstile} from "../lib/turnstile";
 
 const NAV = [
     {to: "/well-baby", label: "Well-baby"},
@@ -15,11 +13,6 @@ const NAV = [
 
 export function Layout() {
     const [theme, setTheme] = useTheme();
-    const turnstileRef = useRef<HTMLDivElement | null>(null);
-
-    useEffect(() => {
-        if (turnstileRef.current) mountTurnstile(turnstileRef.current);
-    }, []);
 
     return (
         <div className="min-h-full flex flex-col bg-cream-50 dark:bg-ink-950 text-ink-900 dark:text-ink-100">
@@ -89,7 +82,6 @@ export function Layout() {
                 className="no-print border-t border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 text-xs text-ink-500 dark:text-ink-400">
                 <div className="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center gap-4 justify-between">
                     <span>Demo build · synthetic data.</span>
-                    <div ref={turnstileRef} aria-label="Bot check"/>
                 </div>
             </footer>
         </div>

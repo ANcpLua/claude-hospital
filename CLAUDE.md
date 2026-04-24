@@ -13,14 +13,37 @@ Live: https://claude-hospital.fly.dev
 
 ## Architecture
 
-- **Client** — static Vite bundle in `dist/`, served by Bun.
-- **Proxy** — `server/index.ts` (Bun): origin allowlist → per-IP sliding
-  window (30/hr) → global daily cap (`DAILY_CAP`, default 1200) →
-  Cloudflare Turnstile verify → forward to Gemini with `GEMINI_KEY`.
+- **Client** — static Vite bundle in `dist/`, served by Bun. Singleton
+  Turnstile widget mounted once in `src/main.tsx` (off-screen, invisible)
+  so route changes never re-spawn it.
+- **Proxy** — `server/index.ts` (Bun): origin allowlist → owner-IP fast
+  path OR (per-IP sliding window → Turnstile siteverify) → global daily
+  cap → retried fetch to Gemini. **Flash Lite only**, no silent model
+  fallback. On `429`/`5xx` from Gemini we retry `RETRY_MAX` times with
+  exponential backoff + jitter, then return a structured `503` with
+  `{error:"upstream-overloaded", attempts, model, detail}` so the client
+  can surface a clear message.
 - **Secrets** — `GEMINI_KEY` and `TURNSTILE_SECRET` live as Fly secrets
-  (`fly secrets set …`); never inlined into the client bundle.
-- **Public site key** — `VITE_TURNSTILE_SITE_KEY` in `.env.production`
-  and `fly.toml` `[build.args]`; safe to commit.
+  in prod and `.env` (gitignored) locally. Never inlined into the bundle.
+- **Public site key** — `VITE_TURNSTILE_SITE_KEY` in `.env.production`,
+  `.env`, and `fly.toml` `[build.args]`; safe to commit.
+
+## Env vars (all optional unless flagged)
+
+| Var                    | Default                     | Purpose                                          |
+|------------------------|-----------------------------|--------------------------------------------------|
+| `GEMINI_KEY`           | —                           | **Required.** Server-side Google AI Studio key.  |
+| `TURNSTILE_SECRET`     | —                           | **Required.** Cloudflare Turnstile secret.       |
+| `GEMINI_MODEL`         | `gemini-flash-lite-latest`  | Locked to Flash Lite by policy.                  |
+| `OWNER_IPS`            | (empty)                     | Comma list — IPs skipping per-IP cap + Turnstile.|
+| `IP_LIMIT`             | `200`                       | Per-IP requests per window.                      |
+| `IP_WINDOW_MINUTES`    | `60`                        | Sliding window length.                           |
+| `DAILY_CAP`            | `1200`                      | Global daily ceiling (UTC).                      |
+| `RETRY_MAX`            | `3`                         | Gemini retry attempts on 429/5xx.                |
+| `RETRY_BASE_MS`        | `400`                       | Exponential backoff base (+ jitter).             |
+| `GEMINI_TIMEOUT_MS`    | `20000`                     | Per-attempt Gemini timeout.                      |
+| `TURNSTILE_TIMEOUT_MS` | `10000`                     | Turnstile siteverify timeout.                    |
+| `ALLOWED_ORIGINS`      | localhost + fly.dev         | CORS allowlist.                                  |
 
 ## Hard constraints
 
@@ -59,14 +82,18 @@ registry-sourced. License key lives in `REACTBITS_LICENSE_KEY` env at
 ## Execution protocol
 
 1. `npm run lint` (tsc --noEmit) and `npm run build` must stay green.
-2. Verify any UI change at 375px before claiming done.
+2. Verify any UI change at 375px before claiming done. Use Playwright
+   for the loop and screenshot the working flow.
 3. Don't add an LLM call anywhere outside a click handler.
-4. Local dev: run `bun server/index.ts` (with `GEMINI_KEY` +
-   `TURNSTILE_SECRET` in the local env) in one terminal and
-   `npm run dev` in another; Vite proxies `/api/*` to `:8080`.
-5. Deploy: `fly secrets set GEMINI_KEY=… TURNSTILE_SECRET=…` (one-time),
-   then `fly deploy` from repo root. App: `claude-hospital`, region
-   `fra`.
+4. Local dev (option A): copy `.env.example` → `.env` and fill keys,
+   then in two terminals `bun server/index.ts` and `npm run dev`. Vite
+   proxies `/api/*` to `:8080`.
+5. Local dev (option B, prod-like): `docker compose up --build` reads
+   `.env` and serves the built bundle on `:8080` exactly like Fly does.
+6. Deploy: `fly secrets set GEMINI_KEY=… TURNSTILE_SECRET=…` (one-time;
+   rotate by re-running), then `fly deploy` from repo root. App:
+   `claude-hospital`, region `fra`. Health endpoint: `/api/health`
+   returns `{ok, model, proxyReady, ownerIps}`.
 
 ## Anti-patterns
 

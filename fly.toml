@@ -1,18 +1,36 @@
 # Fly.io config. Frankfurt = lowest latency to central Europe.
 app = "claude-hospital"
-primary_region = "fra"
 
 [build]
 [build.args]
-# Public Turnstile site key. 1x00000000000000000000AA = always-pass
-# test key. Swap to 0x4AAAAAADCite1PYePcMoRY once claude-hospital.fly.dev
-# is in the real widget's Cloudflare Hostname Management.
-VITE_TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
+# Public Turnstile site key. Safe to commit — paired secret is a Fly secret.
+VITE_TURNSTILE_SITE_KEY = "0x4AAAAAADCite1PYePcMoRY"
 
 [env]
-# Per-IP sliding window — server/index.ts reads this. 30/hr is too tight
-# when a user is bouncing across six demos.
+# All values read by server/index.ts via process.env with sensible defaults.
+# Override here without touching code; Fly secrets carry GEMINI_KEY +
+# TURNSTILE_SECRET separately.
+
+# Model — Flash Lite ($0.25/$1.50 per 1M in/out). No silent upgrade.
+GEMINI_MODEL = "gemini-flash-lite-latest"
+
+# Per-IP sliding window. 200/60min absorbs a user bouncing across six demos.
 IP_LIMIT = "200"
+IP_WINDOW_MINUTES = "60"
+
+# Global daily cap (UTC). Hard ceiling against runaway bills.
+DAILY_CAP = "1200"
+
+# Retry policy on Gemini 429/5xx. Exponential: 400, 800, 1600 ms + jitter.
+RETRY_MAX = "3"
+RETRY_BASE_MS = "400"
+GEMINI_TIMEOUT_MS = "20000"
+TURNSTILE_TIMEOUT_MS = "10000"
+
+# OWNER_IPS — comma list of IPs that bypass per-IP cap AND Turnstile.
+# Empty in prod; set via `fly secrets set OWNER_IPS=…` if you ever want to
+# allowlist a static egress (e.g. office NAT).
+# OWNER_IPS = ""
 
 [http_service]
 internal_port = 8080

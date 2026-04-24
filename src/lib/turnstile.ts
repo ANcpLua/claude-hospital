@@ -3,8 +3,9 @@
 //   1. `mountTurnstile(containerEl)` once at app bootstrap.
 //   2. `await getTurnstileToken()` before any protected fetch.
 //
-// Tokens are single-use. Widget runs invisibly (Managed risk check); real
-// challenges still surface when Cloudflare needs them.
+// Tokens are single-use. The widget is configured for explicit execution
+// so we control when a challenge fires; a real interactive check surfaces
+// only when Cloudflare's risk assessment asks for one.
 
 interface TurnstileApi {
     render: (
@@ -17,6 +18,7 @@ interface TurnstileApi {
             theme?: "light" | "dark" | "auto";
             size?: "normal" | "flexible" | "compact" | "invisible";
             appearance?: "always" | "execute" | "interaction-only";
+            execution?: "render" | "execute";
         },
     ) => string;
     reset: (widgetId: string) => void;
@@ -92,19 +94,22 @@ function fail(err: Error): void {
 
 function ensureWidget(): void {
     if (widgetId !== null || !window.turnstile || !mountEl || !SITE_KEY) return;
-    // Managed mode: the widget renders itself, auto-solves for most users,
-    // and shows an interactive challenge when Cloudflare deems it necessary.
     widgetId = window.turnstile.render(mountEl, {
         sitekey: SITE_KEY,
         theme: "auto",
-        // Hide the badge on auto-pass; surface only when CF requires interaction.
+        size: "invisible",
         appearance: "interaction-only",
+        execution: "execute",
         callback: (token) => deliver(token),
-        "error-callback": (err) => fail(new Error(`turnstile: ${err}`)),
+        "error-callback": (err) => {
+            console.error(`[turnstile] error: ${err}`);
+            fail(new Error(`turnstile: ${err}`));
+        },
         "expired-callback": () => {
             currentToken = null;
         },
     });
+    window.turnstile.execute(widgetId);
 }
 
 export function mountTurnstile(container: HTMLElement): void {
@@ -112,8 +117,8 @@ export function mountTurnstile(container: HTMLElement): void {
     mountEl = container;
     loadScript()
         .then(() => ensureWidget())
-        .catch(() => {
-            /* surfaces on next getTurnstileToken() */
+        .catch((e: unknown) => {
+            console.error(`[turnstile] script load failed: ${e instanceof Error ? e.message : String(e)}`);
         });
 }
 

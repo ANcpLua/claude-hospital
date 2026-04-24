@@ -1,0 +1,37 @@
+# One-command local prod-like run:  docker compose up --build
+# Reads secrets from .env (gitignored). Mirrors fly.toml so the image you
+# test here is the image Fly runs in Frankfurt.
+
+services:
+  rheum-portal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY}
+    image: claude-hospital:local
+    container_name: claude-hospital
+    ports:
+      - "8080:8080"
+    environment:
+      # Required secrets — fail-fast if missing in .env.
+      GEMINI_KEY: ${GEMINI_KEY:?set GEMINI_KEY in .env}
+      TURNSTILE_SECRET: ${TURNSTILE_SECRET:?set TURNSTILE_SECRET in .env}
+      # Tunables — defaults match server/index.ts.
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-lite-latest}
+      OWNER_IPS: ${OWNER_IPS:-}
+      IP_LIMIT: ${IP_LIMIT:-200}
+      IP_WINDOW_MINUTES: ${IP_WINDOW_MINUTES:-60}
+      DAILY_CAP: ${DAILY_CAP:-1200}
+      RETRY_MAX: ${RETRY_MAX:-3}
+      RETRY_BASE_MS: ${RETRY_BASE_MS:-400}
+      GEMINI_TIMEOUT_MS: ${GEMINI_TIMEOUT_MS:-20000}
+      TURNSTILE_TIMEOUT_MS: ${TURNSTILE_TIMEOUT_MS:-10000}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080,http://localhost:5173}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s

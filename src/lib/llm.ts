@@ -16,6 +16,7 @@ export interface CallOpts {
 export type CallReason =
   | "network"
   | "provider-error"
+  | "upstream-overloaded"
   | "rate-limit"
   | "daily-cap"
   | "turnstile";
@@ -31,6 +32,8 @@ const PROXY_URL = "/api/gemini/generate";
 const REASON_COPY: Record<CallReason, string> = {
   network: "Network error reaching the demo proxy.",
   "provider-error": "Upstream model error.",
+  "upstream-overloaded":
+    "Gemini Flash Lite is overloaded right now — proxy retried and gave up. Try again in a moment.",
   "rate-limit": "Too many requests — slow down for a minute.",
   "daily-cap": "Daily demo limit reached — try again tomorrow.",
   turnstile: "Bot check failed — refresh the page and retry.",
@@ -57,6 +60,10 @@ interface GoogleResponse {
 
 interface ProxyErrorBody {
   readonly error?: string;
+  readonly status?: number;
+  readonly attempts?: number;
+  readonly model?: string;
+  readonly detail?: string;
 }
 
 export async function* callLLMStream(opts: CallOpts): AsyncIterable<string> {
@@ -93,16 +100,34 @@ export async function callLLM(opts: CallOpts): Promise<Result> {
 
   const text = await r.text();
   if (!r.ok) {
-    const kind = safeParse<ProxyErrorBody>(text)?.error ?? "";
+    const parsed = safeParse<ProxyErrorBody>(text);
+    const kind = parsed?.error ?? "";
+    console.error(
+      `[llm] proxy ${r.status} reason=${kind || "?"} attempts=${parsed?.attempts ?? "?"} model=${parsed?.model ?? "?"}`,
+      parsed?.detail ?? text.slice(0, 400),
+    );
     if (r.status === 429 && kind === "daily-cap") return fail("daily-cap");
     if (r.status === 429) return fail("rate-limit");
     if (r.status === 403 && kind === "turnstile-failed") return fail("turnstile");
+    if (kind === "upstream-overloaded") {
+      return {
+        ok: false,
+        reason: "upstream-overloaded",
+        error: parsed?.detail
+          ? `${REASON_COPY["upstream-overloaded"]} (${parsed.attempts ?? "?"} attempts; ${parsed.model ?? "?"})`
+          : REASON_COPY["upstream-overloaded"],
+      };
+    }
     return { ok: false, reason: "provider-error", error: kind || text.slice(0, 200) };
   }
 
   const data = safeParse<GoogleResponse>(text);
-  if (!data) return { ok: false, reason: "provider-error", error: "invalid upstream response" };
+  if (!data) {
+    console.error("[llm] invalid upstream JSON", text.slice(0, 400));
+    return { ok: false, reason: "provider-error", error: "invalid upstream response" };
+  }
   if (data.error?.message) {
+    console.error("[llm] gemini error", data.error.message);
     return { ok: false, reason: "provider-error", error: data.error.message };
   }
   const parts = data.candidates?.[0]?.content?.parts ?? [];
