@@ -63,6 +63,12 @@ function loadScript(): Promise<void> {
     return scriptPromise;
 }
 
+function rearm(): void {
+    if (widgetId === null || !window.turnstile) return;
+    window.turnstile.reset(widgetId);
+    window.turnstile.execute(widgetId);
+}
+
 function deliver(token: string): void {
     const waiter = pending.shift();
     if (!waiter) {
@@ -71,8 +77,7 @@ function deliver(token: string): void {
     }
     clearTimeout(waiter.timer);
     waiter.resolve(token);
-    // Still queued callers — kick the widget for the next token.
-    if (pending.length > 0 && widgetId !== null) window.turnstile?.reset(widgetId);
+    if (pending.length > 0) rearm();
 }
 
 function fail(err: Error): void {
@@ -96,6 +101,8 @@ function ensureWidget(): void {
             currentToken = null;
         },
     });
+    // Invisible widgets need an explicit execute to emit the first token.
+    window.turnstile.execute(widgetId);
 }
 
 export function mountTurnstile(container: HTMLElement): void {
@@ -117,13 +124,18 @@ export async function getTurnstileToken(): Promise<string> {
     if (currentToken) {
         const t = currentToken;
         currentToken = null;
-        if (widgetId !== null) window.turnstile?.reset(widgetId);
+        rearm();
         return t;
     }
 
     return new Promise((resolve, reject) => {
         const timer = setTimeout(() => {
             pending = pending.filter((w) => w.timer !== timer);
+            // Stuck widget: drop it so the next call renders fresh.
+            if (widgetId !== null && window.turnstile) {
+                try { window.turnstile.remove(widgetId); } catch { /* empty */ }
+                widgetId = null;
+            }
             reject(new Error("turnstile-timeout"));
         }, TOKEN_TIMEOUT_MS);
         pending.push({ resolve, reject, timer });
