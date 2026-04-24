@@ -172,7 +172,6 @@ const FIRST_VISIT: Visit = VISITS[0] ?? {
 };
 
 export function PostVisit() {
-    const llmReady = true;
     const [tab, setTab] = useState<Tab>("recap");
     const [visitId, setVisitId] = useState<string>(FIRST_VISIT.id);
     const visit: Visit = useMemo(
@@ -254,7 +253,7 @@ export function PostVisit() {
                 [recIdx]: [...withQ, {id: withQ.length, from: "ai", text: reasonMessage(r.reason), error: true}],
             }));
         },
-        [chatByRec, questionByRec, llmReady, visit],
+        [chatByRec, questionByRec, visit],
     );
 
     const stopAndExtract = useCallback(async () => {
@@ -270,10 +269,6 @@ export function PostVisit() {
             return;
         }
 
-        if (!llmReady) {
-            setExtract(deterministicScribeExtract(finalScribe));
-            return;
-        }
         setScribeLoading(true);
         const r = await extractJson<ScribeExtract>({
             system:
@@ -290,7 +285,7 @@ export function PostVisit() {
         }
         cacheSet(cacheNs, cacheKey, r.value);
         setExtract(r.value);
-    }, [speech, finalScribe, llmReady, visit.id]);
+    }, [speech, finalScribe, visit.id]);
 
     function clearScribe() {
         setFinalScribe("");
@@ -333,7 +328,7 @@ export function PostVisit() {
             return;
         }
         setTriageLoading(true);
-        const result = await triage(text, llmReady);
+        const result = await triage(text);
         setTriageLoading(false);
         setTriageResult(result);
         cacheSet(cacheNs, cacheKey, result);

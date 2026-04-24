@@ -53,8 +53,8 @@ Live: https://claude-hospital.fly.dev
 Installed from the starter tier via shadcn CLI in
 `src/components/react-bits/`. Do not modify these files — they are
 registry-sourced. License key lives in `REACTBITS_LICENSE_KEY` env at
-/Users/ancplua/framework/claude-hospital/.env. Current set: `animated-list`, `count-up`,
-`custom-cursor`, `glitch-text`, `shiny-text`, `text-scatter`.
+/Users/ancplua/framework/claude-hospital/.env. Current set: `animated-list`, `count-up`, `custom-cursor`,
+`glitch-text`, `glitter-warp`, `shiny-text`, `text-scatter`.
 
 ## Execution protocol
 

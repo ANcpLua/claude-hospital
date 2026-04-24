@@ -136,7 +136,7 @@ html.dark *:focus-visible {
 
 /* Mono pill */
 .mono {
-    font-family: var(--font-mono), serif;
+    font-family: var(--font-mono);
 }
 
 /* Reduced motion */

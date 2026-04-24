@@ -74,7 +74,7 @@ function validateTriage(raw: unknown): TriageResult | null {
     return {urgency: urgencyRaw, reason, suggestedNextStep: next};
 }
 
-export async function triage(complaint: string, llmAvailable: boolean): Promise<TriageResult> {
+export async function triage(complaint: string): Promise<TriageResult> {
     const text = complaint.trim();
     if (!text) {
         return {
@@ -84,7 +84,7 @@ export async function triage(complaint: string, llmAvailable: boolean): Promise<
         };
     }
     // Urgent safety net must never be overridden by the LLM.
-    if (URGENT_PATTERNS.some((p) => p.test(text)) || !llmAvailable) {
+    if (URGENT_PATTERNS.some((p) => p.test(text))) {
         return deterministicTriage(text);
     }
     const r = await extractJson<TriageResult>({
