@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Mic, MicOff, Plus, RotateCcw, Send } from "lucide-react";
 import { callLLM, callLLMStream, useLlmAvailable } from "../lib/llm";
 import { asBool, asObjectArray, asString, asStringArray, extractJson } from "../lib/extract";
 import { useSpeech } from "../lib/speech";
 import { CountUp } from "../components/react-bits/count-up";
+
+// Code-split: three.js adds ~800 kB raw. Only pay for it on this route.
+const BlackHole = lazy(() => import("../components/react-bits/black-hole"));
 
 const STORAGE_SESSION_KEY = "meduni-previsit-session";
 const DB_NAME = "meduni-previsit";
@@ -472,30 +475,68 @@ export function PreVisit() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-start flex-wrap justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">PreVisit intake</h1>
-          <p className="text-sm text-ink-600 dark:text-ink-300">
-            Patient receives a link, talks to an empathetic AI, and arrives
-            with a structured summary the consultant reads in 30 seconds.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={lang}
-            onChange={(e) => setLang(e.target.value as "en-US" | "de-DE")}
-            className="text-xs border border-ink-300 dark:border-ink-700 rounded-md p-1.5"
-          >
-            <option value="en-US">Voice · English</option>
-            <option value="de-DE">Voice · Deutsch</option>
-          </select>
-          <button
-            type="button"
-            onClick={restart}
-            className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border border-ink-300 dark:border-ink-700 bg-white dark:bg-ink-900 hover:bg-ink-50 dark:hover:bg-ink-800"
-          >
-            <RotateCcw size={14} /> Restart
-          </button>
+      {/* R3F's Canvas inlines position:relative, breaking BlackHole's own
+          children slot — overlay siblings instead of passing via children. */}
+      <header className="relative rounded-xl overflow-hidden border border-ink-200 dark:border-ink-800">
+        <Suspense
+          fallback={<div style={{ width: "100%", height: 240, background: "#050510" }} />}
+        >
+          <BlackHole
+            width="100%"
+            height={240}
+            backgroundColor="#050510"
+            speed={0.9}
+            zoom={2.0}
+            particleCount={14}
+            orbSize={0.6}
+            glow={0.09}
+            contrast={3}
+            mirrorSplits={3}
+            warpEnabled
+            distanceFade={0.5}
+            colorSpeed={0.25}
+          />
+        </Suspense>
+        <div
+          className="absolute inset-0 z-10 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(to top, rgba(5,5,16,0.85) 0%, rgba(5,5,16,0.55) 45%, rgba(5,5,16,0) 75%)",
+          }}
+        />
+        <div className="absolute inset-0 z-20 flex flex-col justify-end sm:flex-row sm:items-end sm:justify-between gap-3 p-6 pointer-events-none">
+          <div className="max-w-xl">
+            <h1
+              className="text-3xl font-semibold text-white"
+              style={{ textShadow: "0 2px 12px rgba(0,0,0,0.6)" }}
+            >
+              PreVisit intake
+            </h1>
+            <p
+              className="mt-1 text-sm text-white/90"
+              style={{ textShadow: "0 1px 8px rgba(0,0,0,0.6)" }}
+            >
+              Patient receives a link, talks to an empathetic AI, and arrives
+              with a structured summary the consultant reads in 30 seconds.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pointer-events-auto">
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value as "en-US" | "de-DE")}
+              className="text-xs border border-white/20 bg-white/10 text-white backdrop-blur-sm rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-white/40"
+            >
+              <option value="en-US" className="text-ink-900">Voice · English</option>
+              <option value="de-DE" className="text-ink-900">Voice · Deutsch</option>
+            </select>
+            <button
+              type="button"
+              onClick={restart}
+              className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
+            >
+              <RotateCcw size={14} /> Restart
+            </button>
+          </div>
         </div>
       </header>
 
