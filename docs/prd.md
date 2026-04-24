@@ -54,7 +54,7 @@ No institutional affiliation. No named patients. No commercial intent.
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│  React 19 · Vite 6 · TypeScript strict · Tailwind 4  │
+│  React 19 · Vite 8 · TypeScript 6 strict · Tailwind 4  │
 │  react-router-dom 7 · HashRouter · lucide-react      │
 │  ReactBits starter (shadcn registry)                 │
 ├──────────────────────────────────────────────────────┤

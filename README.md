@@ -2,8 +2,7 @@
 
 Static reconstruction of the six demos from the Anthropic *Claude Code in
 Healthcare* webinar (Graham Walker, MD + Michał Nedoszytko, MD PhD,
-2026-04-23). React 19 + Vite 6 + TypeScript strict + Tailwind 4. No
-backend, no PHI, no tracking.
+2026-04-23). React 19 + Vite 8 + TypeScript 6 strict + Tailwind 4.
 
 **Live:** https://claude-hospital.fly.dev
 
@@ -63,7 +62,7 @@ docs/
 
 ## Stack
 
-- React 19 · TypeScript 5 strict · Vite 6
+- React 19 · TypeScript 6 strict · Vite 8
 - Tailwind CSS 4 (CSS-based `@theme`, no config file)
 - react-router-dom 7 with `HashRouter`
 - IndexedDB for chat/scribe/guidelines; localStorage for BYOK key,
