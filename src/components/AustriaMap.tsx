@@ -160,6 +160,7 @@ export function AustriaMap({ hospitals, onSelect, selectedName }: Props) {
           return (
             <g
               key={c.label}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 if (c.members.length === 1) onSelect(c.members[0]!);
                 else setOpenCluster(isOpen ? null : c.label);
