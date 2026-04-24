@@ -2,9 +2,6 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-ARG VITE_TURNSTILE_SITE_KEY
-ENV VITE_TURNSTILE_SITE_KEY=$VITE_TURNSTILE_SITE_KEY
-
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .

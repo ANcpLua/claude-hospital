@@ -1,26 +1,27 @@
 // Rheum Portal — Bun proxy in front of Gemini.
 //
 // Serves the built Vite bundle from ./dist and exposes /api/gemini/generate.
-// Per request: origin allowlist → owner-IP fast-path OR (per-IP sliding window
-// → Turnstile siteverify) → daily cap (consumed only on accepted requests) →
-// retried fetch to Gemini with the server-held key.
+// Per request: origin allowlist → owner-IP fast-path OR per-IP sliding
+// window → daily cap (consumed only on accepted requests) → retried fetch
+// to Gemini with the server-held key.
 //
-// Policy: Flash Lite only. No silent model fallback — when the cheap model is
-// overloaded we retry, then surface the failure clearly.
+// Anti-abuse stack (4 layers, no third-party dependency):
+//   1. Origin allowlist            — only ALLOWED_ORIGINS can call /api/*
+//   2. Per-IP sliding window       — IP_LIMIT / IP_WINDOW_MINUTES
+//   3. Global daily cap (UTC)      — DAILY_CAP
+//   4. Server-held GEMINI_KEY      — never leaves the container
 //
 // All tunables come from env so fly.toml / .env can drive behavior without code
 // changes:
 //   GEMINI_KEY              required — Fly secret
-//   TURNSTILE_SECRET        required — Fly secret
-//   GEMINI_MODEL            default gemini-flash-lite-latest
-//   OWNER_IPS               comma list — IPs that skip rate-limit + Turnstile
+//   GEMINI_MODEL            default gemini-3-flash-preview
+//   OWNER_IPS               comma list — IPs that skip rate-limit
 //   IP_LIMIT                default 200
 //   IP_WINDOW_MINUTES       default 60
 //   DAILY_CAP               default 1200
 //   RETRY_MAX               default 3
 //   RETRY_BASE_MS           default 400 (exponential: 400, 800, 1600 …)
 //   GEMINI_TIMEOUT_MS       default 20000
-//   TURNSTILE_TIMEOUT_MS    default 10000
 //   ALLOWED_ORIGINS         comma list (defaults below)
 //   PORT                    default 8080
 
@@ -56,14 +57,12 @@ function csv(name: string, fallback: string): ReadonlyArray<string> {
 
 const PORT = num("PORT", 8080);
 const GEMINI_KEY = (process.env.GEMINI_KEY ?? "").trim();
-const TURNSTILE_SECRET = (process.env.TURNSTILE_SECRET ?? "").trim();
 const DAILY_CAP = num("DAILY_CAP", 1200);
 const IP_LIMIT = num("IP_LIMIT", 200);
 const IP_WINDOW_MS = num("IP_WINDOW_MINUTES", 60) * 60 * 1000;
 const RETRY_MAX = num("RETRY_MAX", 3);
 const RETRY_BASE_MS = num("RETRY_BASE_MS", 400);
 const GEMINI_TIMEOUT_MS = num("GEMINI_TIMEOUT_MS", 20_000);
-const TURNSTILE_TIMEOUT_MS = num("TURNSTILE_TIMEOUT_MS", 10_000);
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
 const OWNER_IPS = new Set<string>(csv("OWNER_IPS", ""));
 const DIST = "./dist";
@@ -72,19 +71,14 @@ const DEFAULT_ORIGINS =
     "https://claude-hospital.fly.dev,http://localhost:5173,http://localhost:5174,http://localhost:8080";
 const ALLOWED_ORIGINS = new Set<string>(csv("ALLOWED_ORIGINS", DEFAULT_ORIGINS));
 
-const PROXY_READY = GEMINI_KEY.length > 0 && TURNSTILE_SECRET.length > 0;
+const PROXY_READY = GEMINI_KEY.length > 0;
 if (!PROXY_READY) {
-    const missing = [
-        GEMINI_KEY.length === 0 ? "GEMINI_KEY" : null,
-        TURNSTILE_SECRET.length === 0 ? "TURNSTILE_SECRET" : null,
-    ].filter((v): v is string => v !== null);
     console.warn(
-        `[proxy] DEGRADED — missing ${missing.join(", ")}. Static site serves; /api/gemini/generate returns 503.`,
+        `[proxy] DEGRADED — missing GEMINI_KEY. Static site serves; /api/gemini/generate returns 503.`,
     );
 }
 
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-const TURNSTILE_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
 interface CallBody {
     system?: string;
@@ -92,7 +86,6 @@ interface CallBody {
     maxTokens?: number;
     temperature?: number;
     responseFormat?: "text" | "json";
-    turnstileToken?: string;
 }
 
 const ipLog = new Map<string, number[]>();
@@ -168,40 +161,6 @@ function json(body: unknown, status: number, origin: string | null): Response {
             ...corsHeaders(origin),
         },
     });
-}
-
-function uuid(): string {
-    return crypto.randomUUID();
-}
-
-async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), TURNSTILE_TIMEOUT_MS);
-    try {
-        const r = await fetch(TURNSTILE_URL, {
-            method: "POST",
-            headers: {"content-type": "application/x-www-form-urlencoded"},
-            body: new URLSearchParams({
-                secret: TURNSTILE_SECRET,
-                response: token,
-                remoteip: ip,
-                idempotency_key: uuid(),
-            }),
-            signal: ctrl.signal,
-        });
-        const data = (await r.json()) as { success?: boolean; "error-codes"?: string[] };
-        if (data.success !== true) {
-            console.warn(
-                `[turnstile] verify failed: ${(data["error-codes"] ?? ["no-codes"]).join(",")}`,
-            );
-        }
-        return data.success === true;
-    } catch (e) {
-        console.warn(`[turnstile] verify threw: ${errMsg(e)}`);
-        return false;
-    } finally {
-        clearTimeout(timer);
-    }
 }
 
 interface UpstreamResult {
@@ -295,7 +254,6 @@ async function handleGenerate(req: Request): Promise<Response> {
         return json({error: "proxy-disabled"}, 503, origin);
     }
     const ip = clientIp(req);
-    const owner = isOwner(ip);
     if (!checkIp(ip)) return json({error: "rate-limit"}, 429, origin);
 
     let body: CallBody;
@@ -308,14 +266,6 @@ async function handleGenerate(req: Request): Promise<Response> {
     const system = body.system ?? "";
     const messages = body.messages ?? [];
     if (messages.length === 0) return json({error: "empty-messages"}, 400, origin);
-
-    if (!owner) {
-        const token = body.turnstileToken?.trim() ?? "";
-        if (!token) return json({error: "missing-token"}, 400, origin);
-        if (!(await verifyTurnstile(token, ip))) {
-            return json({error: "turnstile-failed"}, 403, origin);
-        }
-    }
 
     if (!checkDaily()) return json({error: "daily-cap"}, 429, origin);
 

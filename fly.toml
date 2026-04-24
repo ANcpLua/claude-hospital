@@ -1,15 +1,9 @@
 # Fly.io config. Frankfurt = lowest latency to central Europe.
 app = "claude-hospital"
 
-[build]
-[build.args]
-# Public Turnstile site key. Safe to commit — paired secret is a Fly secret.
-VITE_TURNSTILE_SITE_KEY = "0x4AAAAAADCite1PYePcMoRY"
-
 [env]
 # All values read by server/index.ts via process.env with sensible defaults.
-# Override here without touching code; Fly secrets carry GEMINI_KEY +
-# TURNSTILE_SECRET separately.
+# Override here without touching code; Fly secret carries GEMINI_KEY.
 
 # Model — Gemini 3 Flash preview. No silent fallback to a pricier model.
 GEMINI_MODEL = "gemini-3-flash-preview"
@@ -25,9 +19,8 @@ DAILY_CAP = "1200"
 RETRY_MAX = "3"
 RETRY_BASE_MS = "400"
 GEMINI_TIMEOUT_MS = "20000"
-TURNSTILE_TIMEOUT_MS = "10000"
 
-# OWNER_IPS — comma list of IPs that bypass per-IP cap AND Turnstile.
+# OWNER_IPS — comma list of IPs that bypass per-IP cap.
 # Empty in prod; set via `fly secrets set OWNER_IPS=…` if you ever want to
 # allowlist a static egress (e.g. office NAT).
 # OWNER_IPS = ""

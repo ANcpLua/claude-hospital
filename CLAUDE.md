@@ -13,36 +13,35 @@ Live: https://claude-hospital.fly.dev
 
 ## Architecture
 
-- **Client** — static Vite bundle in `dist/`, served by Bun. Singleton
-  Turnstile widget mounted once in `src/main.tsx` (off-screen, invisible)
-  so route changes never re-spawn it.
+- **Client** — static Vite bundle in `dist/`, served by Bun. No bot-check
+  widget; the proxy's rate-limit + daily-cap are sufficient for a demo.
 - **Proxy** — `server/index.ts` (Bun): origin allowlist → owner-IP fast
-  path OR (per-IP sliding window → Turnstile siteverify) → global daily
-  cap → retried fetch to Gemini. Single pinned model (`GEMINI_MODEL`),
-  no silent fallback. On `429`/`5xx` from Gemini we retry `RETRY_MAX`
-  times with exponential backoff + jitter, then return a structured
-  `503` with `{error:"upstream-overloaded", attempts, model, detail}`
-  so the client can surface a clear message.
-- **Secrets** — `GEMINI_KEY` and `TURNSTILE_SECRET` live as Fly secrets
-  in prod and `.env` (gitignored) locally. Never inlined into the bundle.
-- **Public site key** — `VITE_TURNSTILE_SITE_KEY` in `.env.production`,
-  `.env`, and `fly.toml` `[build.args]`; safe to commit.
+  path OR per-IP sliding window → global daily cap → retried fetch to
+  Gemini. Single pinned model (`GEMINI_MODEL`), no silent fallback. On
+  `429`/`5xx` from Gemini we retry `RETRY_MAX` times with exponential
+  backoff + jitter, then return a structured `503` with
+  `{error:"upstream-overloaded", attempts, model, detail}` so the
+  client can surface a clear message.
+- **Anti-abuse stack (4 layers, no third-party dependency):** origin
+  allowlist · per-IP sliding window · global daily cap · server-held
+  `GEMINI_KEY`. Worst-case daily burn at Flash-3 Preview prices: ~$1
+  if the cap is fully exhausted at 1k tokens in / 500 out per call.
+- **Secret** — `GEMINI_KEY` lives as a Fly secret in prod and in
+  `.env` (gitignored) locally. Never inlined into the bundle.
 
 ## Env vars (all optional unless flagged)
 
 | Var                    | Default                     | Purpose                                          |
 |------------------------|-----------------------------|--------------------------------------------------|
 | `GEMINI_KEY`           | —                           | **Required.** Server-side Google AI Studio key.  |
-| `TURNSTILE_SECRET`     | —                           | **Required.** Cloudflare Turnstile secret.       |
 | `GEMINI_MODEL`         | `gemini-3-flash-preview`    | Pinned. Override in `fly.toml`/`.env`.           |
-| `OWNER_IPS`            | (empty)                     | Comma list — IPs skipping per-IP cap + Turnstile.|
+| `OWNER_IPS`            | (empty)                     | Comma list — IPs skipping per-IP cap.            |
 | `IP_LIMIT`             | `200`                       | Per-IP requests per window.                      |
 | `IP_WINDOW_MINUTES`    | `60`                        | Sliding window length.                           |
 | `DAILY_CAP`            | `1200`                      | Global daily ceiling (UTC).                      |
 | `RETRY_MAX`            | `3`                         | Gemini retry attempts on 429/5xx.                |
 | `RETRY_BASE_MS`        | `400`                       | Exponential backoff base (+ jitter).             |
 | `GEMINI_TIMEOUT_MS`    | `20000`                     | Per-attempt Gemini timeout.                      |
-| `TURNSTILE_TIMEOUT_MS` | `10000`                     | Turnstile siteverify timeout.                    |
 | `ALLOWED_ORIGINS`      | localhost + fly.dev         | CORS allowlist.                                  |
 
 ## Hard constraints

@@ -1,5 +1,3 @@
-import { getTurnstileToken } from "./turnstile";
-
 export interface Message {
   readonly role: "user" | "assistant";
   readonly content: string;
@@ -18,8 +16,7 @@ export type CallReason =
   | "provider-error"
   | "upstream-overloaded"
   | "rate-limit"
-  | "daily-cap"
-  | "turnstile";
+  | "daily-cap";
 
 export type Result =
   | { readonly ok: true; readonly text: string }
@@ -36,7 +33,6 @@ const REASON_COPY: Record<CallReason, string> = {
     "Gemini is overloaded right now — proxy retried and gave up. Try again in a moment.",
   "rate-limit": "Too many requests — slow down for a minute.",
   "daily-cap": "Daily demo limit reached — try again tomorrow.",
-  turnstile: "Bot check failed — refresh the page and retry.",
 };
 
 export function reasonMessage(reason: CallReason): string {
@@ -73,13 +69,6 @@ export async function* callLLMStream(opts: CallOpts): AsyncIterable<string> {
 }
 
 export async function callLLM(opts: CallOpts): Promise<Result> {
-  let token: string;
-  try {
-    token = await getTurnstileToken();
-  } catch (e) {
-    return { ok: false, reason: "turnstile", error: errMsg(e) };
-  }
-
   let r: Response;
   try {
     r = await fetch(PROXY_URL, {
@@ -91,7 +80,6 @@ export async function callLLM(opts: CallOpts): Promise<Result> {
         maxTokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
         temperature: opts.temperature ?? DEFAULT_TEMPERATURE,
         responseFormat: opts.responseFormat,
-        turnstileToken: token,
       }),
     });
   } catch (e) {
@@ -108,7 +96,6 @@ export async function callLLM(opts: CallOpts): Promise<Result> {
     );
     if (r.status === 429 && kind === "daily-cap") return fail("daily-cap");
     if (r.status === 429) return fail("rate-limit");
-    if (r.status === 403 && kind === "turnstile-failed") return fail("turnstile");
     if (kind === "upstream-overloaded") {
       return {
         ok: false,
