@@ -64,7 +64,7 @@ const RETRY_MAX = num("RETRY_MAX", 3);
 const RETRY_BASE_MS = num("RETRY_BASE_MS", 400);
 const GEMINI_TIMEOUT_MS = num("GEMINI_TIMEOUT_MS", 20_000);
 const TURNSTILE_TIMEOUT_MS = num("TURNSTILE_TIMEOUT_MS", 10_000);
-const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest";
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3-flash-preview";
 const OWNER_IPS = new Set<string>(csv("OWNER_IPS", ""));
 const DIST = "./dist";
 

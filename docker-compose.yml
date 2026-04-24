@@ -18,7 +18,7 @@ services:
       GEMINI_KEY: ${GEMINI_KEY:?set GEMINI_KEY in .env}
       TURNSTILE_SECRET: ${TURNSTILE_SECRET:?set TURNSTILE_SECRET in .env}
       # Tunables — defaults match server/index.ts.
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-lite-latest}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3-flash-preview}
       OWNER_IPS: ${OWNER_IPS:-}
       IP_LIMIT: ${IP_LIMIT:-200}
       IP_WINDOW_MINUTES: ${IP_WINDOW_MINUTES:-60}

@@ -33,7 +33,7 @@ const REASON_COPY: Record<CallReason, string> = {
   network: "Network error reaching the demo proxy.",
   "provider-error": "Upstream model error.",
   "upstream-overloaded":
-    "Gemini Flash Lite is overloaded right now — proxy retried and gave up. Try again in a moment.",
+    "Gemini is overloaded right now — proxy retried and gave up. Try again in a moment.",
   "rate-limit": "Too many requests — slow down for a minute.",
   "daily-cap": "Daily demo limit reached — try again tomorrow.",
   turnstile: "Bot check failed — refresh the page and retry.",

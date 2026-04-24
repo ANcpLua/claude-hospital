@@ -115,10 +115,13 @@ export function WellBaby() {
 
     async function generateNarrative() {
         const key = hashInput(b);
-        const hit = cache[key];
-        if (hit) {
-            setNarrative({status: "ready", sections: hit});
-            return;
+        const force = narrative.status === "ready";
+        if (!force) {
+            const hit = cache[key];
+            if (hit) {
+                setNarrative({status: "ready", sections: hit});
+                return;
+            }
         }
         setNarrative({status: "loading"});
         const {

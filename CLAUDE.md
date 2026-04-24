@@ -18,11 +18,11 @@ Live: https://claude-hospital.fly.dev
   so route changes never re-spawn it.
 - **Proxy** — `server/index.ts` (Bun): origin allowlist → owner-IP fast
   path OR (per-IP sliding window → Turnstile siteverify) → global daily
-  cap → retried fetch to Gemini. **Flash Lite only**, no silent model
-  fallback. On `429`/`5xx` from Gemini we retry `RETRY_MAX` times with
-  exponential backoff + jitter, then return a structured `503` with
-  `{error:"upstream-overloaded", attempts, model, detail}` so the client
-  can surface a clear message.
+  cap → retried fetch to Gemini. Single pinned model (`GEMINI_MODEL`),
+  no silent fallback. On `429`/`5xx` from Gemini we retry `RETRY_MAX`
+  times with exponential backoff + jitter, then return a structured
+  `503` with `{error:"upstream-overloaded", attempts, model, detail}`
+  so the client can surface a clear message.
 - **Secrets** — `GEMINI_KEY` and `TURNSTILE_SECRET` live as Fly secrets
   in prod and `.env` (gitignored) locally. Never inlined into the bundle.
 - **Public site key** — `VITE_TURNSTILE_SITE_KEY` in `.env.production`,
@@ -34,7 +34,7 @@ Live: https://claude-hospital.fly.dev
 |------------------------|-----------------------------|--------------------------------------------------|
 | `GEMINI_KEY`           | —                           | **Required.** Server-side Google AI Studio key.  |
 | `TURNSTILE_SECRET`     | —                           | **Required.** Cloudflare Turnstile secret.       |
-| `GEMINI_MODEL`         | `gemini-flash-lite-latest`  | Locked to Flash Lite by policy.                  |
+| `GEMINI_MODEL`         | `gemini-3-flash-preview`    | Pinned. Override in `fly.toml`/`.env`.           |
 | `OWNER_IPS`            | (empty)                     | Comma list — IPs skipping per-IP cap + Turnstile.|
 | `IP_LIMIT`             | `200`                       | Per-IP requests per window.                      |
 | `IP_WINDOW_MINUTES`    | `60`                        | Sliding window length.                           |

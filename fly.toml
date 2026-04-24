@@ -11,8 +11,8 @@ VITE_TURNSTILE_SITE_KEY = "0x4AAAAAADCite1PYePcMoRY"
 # Override here without touching code; Fly secrets carry GEMINI_KEY +
 # TURNSTILE_SECRET separately.
 
-# Model — Flash Lite ($0.25/$1.50 per 1M in/out). No silent upgrade.
-GEMINI_MODEL = "gemini-flash-lite-latest"
+# Model — Gemini 3 Flash preview. No silent fallback to a pricier model.
+GEMINI_MODEL = "gemini-3-flash-preview"
 
 # Per-IP sliding window. 200/60min absorbs a user bouncing across six demos.
 IP_LIMIT = "200"
