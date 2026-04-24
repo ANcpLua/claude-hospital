@@ -24,14 +24,24 @@ declare const Bun: {
 
 declare const process: {
   env: Record<string, string | undefined>;
-  exit: (code?: number) => never;
 };
 
 const PORT = Number(process.env.PORT ?? 8080);
-const GEMINI_KEY = mustEnv("GEMINI_KEY");
-const TURNSTILE_SECRET = mustEnv("TURNSTILE_SECRET");
+const GEMINI_KEY = (process.env.GEMINI_KEY ?? "").trim();
+const TURNSTILE_SECRET = (process.env.TURNSTILE_SECRET ?? "").trim();
 const DAILY_CAP = Number(process.env.DAILY_CAP ?? 1200);
 const DIST = "./dist";
+const PROXY_READY = GEMINI_KEY.length > 0 && TURNSTILE_SECRET.length > 0;
+
+if (!PROXY_READY) {
+  const missing = [
+    GEMINI_KEY.length === 0 ? "GEMINI_KEY" : null,
+    TURNSTILE_SECRET.length === 0 ? "TURNSTILE_SECRET" : null,
+  ].filter((v): v is string => v !== null);
+  console.warn(
+    `[rheum-proxy] DEGRADED — missing ${missing.join(", ")}. Static site serves normally; /api/gemini/generate returns 503.`,
+  );
+}
 
 const ALLOWED_ORIGINS = new Set<string>([
   "https://claude-hospital.fly.dev",
@@ -43,7 +53,7 @@ const ALLOWED_ORIGINS = new Set<string>([
 const IP_LIMIT = 30;
 const IP_WINDOW_MS = 60 * 60 * 1000;
 
-const GEMINI_MODEL = "gemini-3.1-flash-lite-preview";
+const GEMINI_MODEL = "gemini-flash-latest";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 const TURNSTILE_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
@@ -59,15 +69,6 @@ interface CallBody {
 const ipLog = new Map<string, number[]>();
 let today = todayUtc();
 let dayCount = 0;
-
-function mustEnv(name: string): string {
-  const v = process.env[name];
-  if (!v || v.trim().length === 0) {
-    console.error(`[fatal] missing env: ${name}`);
-    process.exit(1);
-  }
-  return v;
-}
 
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
@@ -154,6 +155,9 @@ async function handleGenerate(req: Request): Promise<Response> {
   const origin = req.headers.get("origin");
   if (!origin || !ALLOWED_ORIGINS.has(origin)) {
     return json({ error: "origin-rejected" }, 403, origin);
+  }
+  if (!PROXY_READY) {
+    return json({ error: "proxy-disabled" }, 503, origin);
   }
   const ip = clientIp(req);
   if (!checkIp(ip)) return json({ error: "rate-limit" }, 429, origin);

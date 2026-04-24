@@ -18,6 +18,7 @@ interface TurnstileApi {
       "expired-callback"?: () => void;
       theme?: "light" | "dark" | "auto";
       appearance?: "always" | "execute" | "interaction-only";
+      size?: "normal" | "flexible" | "compact" | "invisible";
     },
   ) => string;
   reset: (widgetId: string) => void;
@@ -76,7 +77,10 @@ function ensureWidget(): void {
   widgetId = window.turnstile.render(mountEl, {
     sitekey: SITE_KEY,
     theme: "auto",
-    appearance: "always",
+    // 0×0 iframe — no "Erfolg!" badge ever pinned to the page.
+    // Managed risk assessment still runs; real challenges still surface
+    // when Cloudflare really needs them.
+    size: "invisible",
     callback: (token) => deliver(token),
     "error-callback": (err) => fail(new Error(`turnstile: ${err}`)),
     "expired-callback": () => {
