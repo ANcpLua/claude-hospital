@@ -5,6 +5,7 @@ import {
   fetchAqi,
   isAqiKeyAvailable,
   SEED_READINGS,
+  useHospitalAqi,
   type AqiReading,
 } from "../lib/aqi";
 import { callLLM, useLlmAvailable } from "../lib/llm";
@@ -549,6 +550,42 @@ function SmsPreview({
   );
 }
 
+function DataSourceBadge({
+  hasKey,
+  loading,
+  liveCount,
+  failedCount,
+}: {
+  readonly hasKey: boolean;
+  readonly loading: boolean;
+  readonly liveCount: number;
+  readonly failedCount: number;
+}) {
+  if (!hasKey) {
+    return (
+      <span className="rounded-full bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 text-[10px] uppercase tracking-[0.18em] font-semibold px-2 py-0.5">
+        Mock · no OWM key
+      </span>
+    );
+  }
+  if (loading && liveCount === 0) {
+    return (
+      <span className="rounded-full bg-ink-100 dark:bg-ink-800 text-ink-600 dark:text-ink-300 text-[10px] uppercase tracking-[0.18em] font-semibold px-2 py-0.5">
+        Loading…
+      </span>
+    );
+  }
+  return (
+    <span
+      className="rounded-full bg-emerald-100 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 text-[10px] uppercase tracking-[0.18em] font-semibold px-2 py-0.5"
+      title={failedCount > 0 ? `${failedCount} site(s) hidden due to fetch failure` : "All sites live"}
+    >
+      Live · OWM {liveCount}
+      {failedCount > 0 ? ` (${failedCount} hidden)` : ""}
+    </span>
+  );
+}
+
 function PublicHealth({
   baseAqi,
   seeds,
@@ -557,23 +594,33 @@ function PublicHealth({
   readonly seeds: ReadonlyArray<AqiReading>;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
-  const adjusted = useMemo(
-    () =>
-      AUSTRIA_HOSPITAL_HOTSPOTS.map((h) => ({
-        ...h,
-        aqi: clamp(h.aqi + (baseAqi - 51), 0, 300),
-      })).sort((a, b) => b.aqi - a.aqi),
-    [baseAqi],
-  );
+  const live = useHospitalAqi(AUSTRIA_HOSPITAL_HOTSPOTS);
+
+  const adjusted = useMemo(() => {
+    if (live.hasKey) {
+      return AUSTRIA_HOSPITAL_HOTSPOTS.flatMap((h) => {
+        const reading = live.results.get(h.name);
+        return reading ? [{ ...h, aqi: reading.aqi }] : [];
+      }).sort((a, b) => b.aqi - a.aqi);
+    }
+    return AUSTRIA_HOSPITAL_HOTSPOTS.map((h) => ({
+      ...h,
+      aqi: clamp(h.aqi + (baseAqi - 51), 0, 300),
+    })).sort((a, b) => b.aqi - a.aqi);
+  }, [baseAqi, live.hasKey, live.results]);
 
   const selectedHospital = adjusted.find((h) => h.name === selected) ?? null;
   const trend = useMemo(() => {
     if (!selectedHospital) return null;
+    const liveReading = live.results.get(selectedHospital.name);
+    if (liveReading && liveReading.hours24.length > 0) {
+      return [...liveReading.hours24];
+    }
     const anchor = seeds[0];
     if (!anchor) return null;
     const ratio = selectedHospital.aqi / Math.max(1, anchor.aqi);
     return anchor.hours24.map((v) => Math.round(v * ratio));
-  }, [selectedHospital, seeds]);
+  }, [selectedHospital, seeds, live.results]);
 
   const worstCount = adjusted.filter((h) => h.aqi > 100).length;
   const advisoryTone = advisoryToneFor(selectedHospital?.aqi);
@@ -582,15 +629,29 @@ function PublicHealth({
   return (
     <section className="rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 p-5 space-y-4">
       <div className="space-y-1">
-        <h2 className="font-semibold text-ink-900 dark:text-ink-100">
-          Public-health console · Austria
-        </h2>
+        <div className="flex items-center flex-wrap gap-2">
+          <h2 className="font-semibold text-ink-900 dark:text-ink-100">
+            Public-health console · Austria
+          </h2>
+          <DataSourceBadge
+            hasKey={live.hasKey}
+            loading={live.loading}
+            liveCount={live.liveCount}
+            failedCount={live.failedCount}
+          />
+        </div>
         <p className="text-sm text-ink-600 dark:text-ink-300">
-          You're the state health officer. Ten reference sites. <strong>
-          Click any circle on the map</strong> (or any row below) to see that
+          You're the state health officer.{" "}
+          {live.hasKey ? `${adjusted.length} live site${adjusted.length === 1 ? "" : "s"}` : "Ten reference sites"}.{" "}
+          <strong>Click any circle on the map</strong> (or any row below) to see that
           bundesland's 24-h AQI forecast, a plain-language advisory, and a
           suggested next step. Currently <strong className="tabular-nums">{worstCount}</strong>
           {" "}of {adjusted.length} sites are above AQI 100.
+          {live.hasKey && live.failedCount > 0 ? (
+            <span className="block mt-1 text-rose-700 dark:text-rose-300">
+              {live.failedCount} site{live.failedCount === 1 ? "" : "s"} hidden — OWM call failed. Check your API key or rate limits.
+            </span>
+          ) : null}
         </p>
       </div>
 

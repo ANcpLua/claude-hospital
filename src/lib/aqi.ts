@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 export interface AqiReading {
   readonly zip: string;
   readonly city: string;
@@ -128,14 +130,15 @@ async function geocodeZip(
   }
 }
 
-export async function fetchAqi(zip: string): Promise<AqiReading | null> {
-  const key = getOpenWeatherKey();
-  if (!key) return null;
-  const geo = await geocodeZip(zip, key);
-  if (!geo) return null;
+async function fetchAirPollution(
+  lat: number,
+  lon: number,
+  key: string,
+  label: { zip: string; city: string },
+): Promise<AqiReading | null> {
   try {
     const r = await fetch(
-      `https://api.openweathermap.org/data/2.5/air_pollution/forecast?lat=${geo.lat}&lon=${geo.lon}&appid=${encodeURIComponent(key)}`,
+      `https://api.openweathermap.org/data/2.5/air_pollution/forecast?lat=${lat}&lon=${lon}&appid=${encodeURIComponent(key)}`,
     );
     if (!r.ok) return null;
     const data = (await r.json()) as AirPollutionResponse;
@@ -146,10 +149,11 @@ export async function fetchAqi(zip: string): Promise<AqiReading | null> {
         ? owmIndexToAqi(p.main.aqi, p.components)
         : 0,
     );
-    const first = series[0]!;
+    const first = series[0];
+    if (!first) return null;
     return {
-      zip,
-      city: geo.city,
+      zip: label.zip,
+      city: label.city,
       aqi: aqis[0] ?? 0,
       dominant: dominantPollutant(first.components ?? {}),
       hours24: aqis,
@@ -157,6 +161,104 @@ export async function fetchAqi(zip: string): Promise<AqiReading | null> {
   } catch {
     return null;
   }
+}
+
+export async function fetchAqi(zip: string): Promise<AqiReading | null> {
+  const key = getOpenWeatherKey();
+  if (!key) return null;
+  const geo = await geocodeZip(zip, key);
+  if (!geo) return null;
+  return fetchAirPollution(geo.lat, geo.lon, key, { zip, city: geo.city });
+}
+
+export async function fetchAqiByCoords(
+  lat: number,
+  lng: number,
+  city: string,
+): Promise<AqiReading | null> {
+  const key = getOpenWeatherKey();
+  if (!key) return null;
+  return fetchAirPollution(lat, lng, key, {
+    zip: `${lat.toFixed(4)},${lng.toFixed(4)}`,
+    city,
+  });
+}
+
+interface HospitalCoords {
+  readonly name: string;
+  readonly city: string;
+  readonly lat: number;
+  readonly lng: number;
+}
+
+export interface HospitalAqiState {
+  readonly results: ReadonlyMap<string, AqiReading>;
+  readonly loading: boolean;
+  readonly hasKey: boolean;
+  readonly liveCount: number;
+  readonly failedCount: number;
+}
+
+const COORDS_CACHE = new Map<string, { at: number; reading: AqiReading | null }>();
+const COORDS_TTL_MS = 10 * 60 * 1000;
+
+export function useHospitalAqi(
+  hospitals: ReadonlyArray<HospitalCoords>,
+): HospitalAqiState {
+  const hasKey = isAqiKeyAvailable();
+  const [results, setResults] = useState<ReadonlyMap<string, AqiReading>>(
+    () => new Map(),
+  );
+  const [loading, setLoading] = useState(false);
+  const [failedCount, setFailedCount] = useState(0);
+
+  useEffect(() => {
+    if (!hasKey) {
+      setResults(new Map());
+      setFailedCount(0);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    const now = Date.now();
+
+    void Promise.all(
+      hospitals.map(async (h) => {
+        const cacheKey = `${h.lat.toFixed(4)},${h.lng.toFixed(4)}`;
+        const cached = COORDS_CACHE.get(cacheKey);
+        if (cached && now - cached.at < COORDS_TTL_MS) {
+          return [h.name, cached.reading] as const;
+        }
+        const reading = await fetchAqiByCoords(h.lat, h.lng, h.city);
+        COORDS_CACHE.set(cacheKey, { at: now, reading });
+        return [h.name, reading] as const;
+      }),
+    ).then((pairs) => {
+      if (cancelled) return;
+      const next = new Map<string, AqiReading>();
+      let fails = 0;
+      for (const [name, reading] of pairs) {
+        if (reading) next.set(name, reading);
+        else fails += 1;
+      }
+      setResults(next);
+      setFailedCount(fails);
+      setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasKey, hospitals]);
+
+  return {
+    results,
+    loading,
+    hasKey,
+    liveCount: results.size,
+    failedCount,
+  };
 }
 
 export function aqiColor(aqi: number): string {
