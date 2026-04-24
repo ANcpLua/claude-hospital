@@ -1,53 +1,53 @@
 "use client";
 
-import React, { useRef, useMemo, useCallback, useState } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { cn } from "@/lib/utils";
+import React, {useCallback, useMemo, useRef, useState} from "react";
+import {Canvas, useFrame, useThree} from "@react-three/fiber";
+import {cn} from "@/lib/utils";
 import * as THREE from "three";
 
 export interface BlackHoleProps {
-  /** Container width */
-  width?: string | number;
-  /** Container height */
-  height?: string | number;
-  /** Additional CSS classes */
-  className?: string;
-  /** Content rendered above the effect */
-  children?: React.ReactNode;
-  /** Animation speed multiplier */
-  speed?: number;
-  /** Field of view scale */
-  zoom?: number;
-  /** Number of orbiting particles */
-  particleCount?: number;
-  /** Orb radius scale */
-  orbSize?: number;
-  /** Glow intensity per particle */
-  glow?: number;
-  /** Final contrast exponent */
-  contrast?: number;
-  /** Kaleidoscope mirror segments */
-  mirrorSplits?: number;
-  /** Enable kaleidoscope warp */
-  warpEnabled?: boolean;
-  /** Distance-based brightness multiplier */
-  distanceFade?: number;
-  /** Color cycle phase R */
-  colorShiftR?: number;
-  /** Color cycle phase G */
-  colorShiftG?: number;
-  /** Color cycle phase B */
-  colorShiftB?: number;
-  /** Per-particle color cycle speed */
-  colorSpeed?: number;
-  /** Background color in hex */
-  backgroundColor?: string;
-  /** Master opacity */
-  opacity?: number;
-  /** Enable cursor interaction for gravitational pull effect near pointer */
-  cursorInteraction?: boolean;
-  /** Cursor effect strength multiplier (0–3) */
-  cursorIntensity?: number;
+    /** Container width */
+    width?: string | number;
+    /** Container height */
+    height?: string | number;
+    /** Additional CSS classes */
+    className?: string;
+    /** Content rendered above the effect */
+    children?: React.ReactNode;
+    /** Animation speed multiplier */
+    speed?: number;
+    /** Field of view scale */
+    zoom?: number;
+    /** Number of orbiting particles */
+    particleCount?: number;
+    /** Orb radius scale */
+    orbSize?: number;
+    /** Glow intensity per particle */
+    glow?: number;
+    /** Final contrast exponent */
+    contrast?: number;
+    /** Kaleidoscope mirror segments */
+    mirrorSplits?: number;
+    /** Enable kaleidoscope warp */
+    warpEnabled?: boolean;
+    /** Distance-based brightness multiplier */
+    distanceFade?: number;
+    /** Color cycle phase R */
+    colorShiftR?: number;
+    /** Color cycle phase G */
+    colorShiftG?: number;
+    /** Color cycle phase B */
+    colorShiftB?: number;
+    /** Per-particle color cycle speed */
+    colorSpeed?: number;
+    /** Background color in hex */
+    backgroundColor?: string;
+    /** Master opacity */
+    opacity?: number;
+    /** Enable cursor interaction for gravitational pull effect near pointer */
+    cursorInteraction?: boolean;
+    /** Cursor effect strength multiplier (0–3) */
+    cursorIntensity?: number;
 }
 
 const vertexSource = `
@@ -135,207 +135,207 @@ void main() {
 `;
 
 interface HoleSceneProps {
-  speed: number;
-  zoom: number;
-  particleCount: number;
-  orbSize: number;
-  glow: number;
-  contrast: number;
-  mirrorSplits: number;
-  warpEnabled: boolean;
-  distanceFade: number;
-  colorShiftR: number;
-  colorShiftG: number;
-  colorShiftB: number;
-  colorSpeed: number;
-  backgroundColor: string;
-  opacity: number;
-  pointer: [number, number];
-  cursorInteraction: boolean;
-  cursorIntensity: number;
+    speed: number;
+    zoom: number;
+    particleCount: number;
+    orbSize: number;
+    glow: number;
+    contrast: number;
+    mirrorSplits: number;
+    warpEnabled: boolean;
+    distanceFade: number;
+    colorShiftR: number;
+    colorShiftG: number;
+    colorShiftB: number;
+    colorSpeed: number;
+    backgroundColor: string;
+    opacity: number;
+    pointer: [number, number];
+    cursorInteraction: boolean;
+    cursorIntensity: number;
 }
 
 const HoleScene: React.FC<HoleSceneProps> = ({
-  speed,
-  zoom,
-  particleCount,
-  orbSize,
-  glow,
-  contrast,
-  mirrorSplits,
-  warpEnabled,
-  distanceFade,
-  colorShiftR,
-  colorShiftG,
-  colorShiftB,
-  colorSpeed,
-  backgroundColor,
-  opacity,
-  pointer,
-  cursorInteraction,
-  cursorIntensity,
-}) => {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const { size } = useThree();
-  const smoothPointer = useRef(new THREE.Vector2(0.5, 0.5));
+                                                 speed,
+                                                 zoom,
+                                                 particleCount,
+                                                 orbSize,
+                                                 glow,
+                                                 contrast,
+                                                 mirrorSplits,
+                                                 warpEnabled,
+                                                 distanceFade,
+                                                 colorShiftR,
+                                                 colorShiftG,
+                                                 colorShiftB,
+                                                 colorSpeed,
+                                                 backgroundColor,
+                                                 opacity,
+                                                 pointer,
+                                                 cursorInteraction,
+                                                 cursorIntensity,
+                                             }) => {
+    const meshRef = useRef<THREE.Mesh>(null);
+    const {size} = useThree();
+    const smoothPointer = useRef(new THREE.Vector2(0.5, 0.5));
 
-  const shaderUniforms = useMemo(
-    () => ({
-      uTime: { value: 0 },
-      uRes: { value: new THREE.Vector2(1, 1) },
-      uSpeed: { value: 1 },
-      uZoom: { value: 1.8 },
-      uCount: { value: 13 },
-      uOrbSize: { value: 0.75 },
-      uGlow: { value: 0.08 },
-      uContrast: { value: 3 },
-      uSplits: { value: 2 },
-      uWarp: { value: true },
-      uDistFade: { value: 0.35 },
-      uColorShift: { value: new THREE.Vector3(-6, -6, -6) },
-      uColorRate: { value: 0.2 },
-      uBg: { value: new THREE.Vector3(0, 0, 0) },
-      uAlpha: { value: 1 },
-      uPointer: { value: new THREE.Vector2(0.5, 0.5) },
-      uCursorActive: { value: 0 },
-      uCursorIntensity: { value: 1 },
-    }),
-    [],
-  );
-
-  useFrame((state, delta) => {
-    if (!meshRef.current) return;
-    const mat = meshRef.current.material as THREE.ShaderMaterial;
-    mat.uniforms.uTime.value = state.clock.elapsedTime;
-    mat.uniforms.uRes.value.set(size.width, size.height);
-    mat.uniforms.uSpeed.value = speed;
-    mat.uniforms.uZoom.value = zoom;
-    mat.uniforms.uCount.value = particleCount;
-    mat.uniforms.uOrbSize.value = orbSize;
-    mat.uniforms.uGlow.value = glow;
-    mat.uniforms.uContrast.value = contrast;
-    mat.uniforms.uSplits.value = mirrorSplits;
-    mat.uniforms.uWarp.value = warpEnabled;
-    mat.uniforms.uDistFade.value = distanceFade;
-    mat.uniforms.uColorShift.value.set(colorShiftR, colorShiftG, colorShiftB);
-    mat.uniforms.uColorRate.value = colorSpeed;
-    const bg = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(
-      backgroundColor,
+    const shaderUniforms = useMemo(
+        () => ({
+            uTime: {value: 0},
+            uRes: {value: new THREE.Vector2(1, 1)},
+            uSpeed: {value: 1},
+            uZoom: {value: 1.8},
+            uCount: {value: 13},
+            uOrbSize: {value: 0.75},
+            uGlow: {value: 0.08},
+            uContrast: {value: 3},
+            uSplits: {value: 2},
+            uWarp: {value: true},
+            uDistFade: {value: 0.35},
+            uColorShift: {value: new THREE.Vector3(-6, -6, -6)},
+            uColorRate: {value: 0.2},
+            uBg: {value: new THREE.Vector3(0, 0, 0)},
+            uAlpha: {value: 1},
+            uPointer: {value: new THREE.Vector2(0.5, 0.5)},
+            uCursorActive: {value: 0},
+            uCursorIntensity: {value: 1},
+        }),
+        [],
     );
-    if (bg)
-      mat.uniforms.uBg.value.set(
-        parseInt(bg[1], 16) / 255,
-        parseInt(bg[2], 16) / 255,
-        parseInt(bg[3], 16) / 255,
-      );
-    mat.uniforms.uAlpha.value = opacity;
-    mat.uniforms.uCursorActive.value = cursorInteraction ? 1 : 0;
-    mat.uniforms.uCursorIntensity.value = cursorIntensity;
 
-    const ease = 1 - Math.exp(-delta / 0.15);
-    smoothPointer.current.x += (pointer[0] - smoothPointer.current.x) * ease;
-    smoothPointer.current.y += (pointer[1] - smoothPointer.current.y) * ease;
-    mat.uniforms.uPointer.value.set(
-      smoothPointer.current.x,
-      smoothPointer.current.y,
+    useFrame((state, delta) => {
+        if (!meshRef.current) return;
+        const mat = meshRef.current.material as THREE.ShaderMaterial;
+        mat.uniforms.uTime.value = state.clock.elapsedTime;
+        mat.uniforms.uRes.value.set(size.width, size.height);
+        mat.uniforms.uSpeed.value = speed;
+        mat.uniforms.uZoom.value = zoom;
+        mat.uniforms.uCount.value = particleCount;
+        mat.uniforms.uOrbSize.value = orbSize;
+        mat.uniforms.uGlow.value = glow;
+        mat.uniforms.uContrast.value = contrast;
+        mat.uniforms.uSplits.value = mirrorSplits;
+        mat.uniforms.uWarp.value = warpEnabled;
+        mat.uniforms.uDistFade.value = distanceFade;
+        mat.uniforms.uColorShift.value.set(colorShiftR, colorShiftG, colorShiftB);
+        mat.uniforms.uColorRate.value = colorSpeed;
+        const bg = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(
+            backgroundColor,
+        );
+        if (bg)
+            mat.uniforms.uBg.value.set(
+                parseInt(bg[1], 16) / 255,
+                parseInt(bg[2], 16) / 255,
+                parseInt(bg[3], 16) / 255,
+            );
+        mat.uniforms.uAlpha.value = opacity;
+        mat.uniforms.uCursorActive.value = cursorInteraction ? 1 : 0;
+        mat.uniforms.uCursorIntensity.value = cursorIntensity;
+
+        const ease = 1 - Math.exp(-delta / 0.15);
+        smoothPointer.current.x += (pointer[0] - smoothPointer.current.x) * ease;
+        smoothPointer.current.y += (pointer[1] - smoothPointer.current.y) * ease;
+        mat.uniforms.uPointer.value.set(
+            smoothPointer.current.x,
+            smoothPointer.current.y,
+        );
+    });
+
+    return (
+        <mesh ref={meshRef}>
+            <planeGeometry args={[2, 2]}/>
+            <shaderMaterial
+                vertexShader={vertexSource}
+                fragmentShader={fragmentSource}
+                uniforms={shaderUniforms}
+                transparent
+            />
+        </mesh>
     );
-  });
-
-  return (
-    <mesh ref={meshRef}>
-      <planeGeometry args={[2, 2]} />
-      <shaderMaterial
-        vertexShader={vertexSource}
-        fragmentShader={fragmentSource}
-        uniforms={shaderUniforms}
-        transparent
-      />
-    </mesh>
-  );
 };
 
 const BlackHole: React.FC<BlackHoleProps> = ({
-  width = "100%",
-  height = "100%",
-  className,
-  children,
-  speed = 1,
-  zoom = 1.8,
-  particleCount = 13,
-  orbSize = 0.75,
-  glow = 0.08,
-  contrast = 3,
-  mirrorSplits = 2,
-  warpEnabled = true,
-  distanceFade = 0.35,
-  colorShiftR = -6,
-  colorShiftG = -6,
-  colorShiftB = -6,
-  colorSpeed = 0.2,
-  backgroundColor = "#000000",
-  opacity = 1,
-  cursorInteraction = false,
-  cursorIntensity = 1,
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [pointer, setPointer] = useState<[number, number]>([0.5, 0.5]);
+                                                 width = "100%",
+                                                 height = "100%",
+                                                 className,
+                                                 children,
+                                                 speed = 1,
+                                                 zoom = 1.8,
+                                                 particleCount = 13,
+                                                 orbSize = 0.75,
+                                                 glow = 0.08,
+                                                 contrast = 3,
+                                                 mirrorSplits = 2,
+                                                 warpEnabled = true,
+                                                 distanceFade = 0.35,
+                                                 colorShiftR = -6,
+                                                 colorShiftG = -6,
+                                                 colorShiftB = -6,
+                                                 colorSpeed = 0.2,
+                                                 backgroundColor = "#000000",
+                                                 opacity = 1,
+                                                 cursorInteraction = false,
+                                                 cursorIntensity = 1,
+                                             }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [pointer, setPointer] = useState<[number, number]>([0.5, 0.5]);
 
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!cursorInteraction) return;
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const nx = (e.clientX - rect.left) / rect.width;
-      const ny = 1 - (e.clientY - rect.top) / rect.height;
-      setPointer([nx, ny]);
-    },
-    [cursorInteraction],
-  );
+    const handlePointerMove = useCallback(
+        (e: React.PointerEvent<HTMLDivElement>) => {
+            if (!cursorInteraction) return;
+            const rect = containerRef.current?.getBoundingClientRect();
+            if (!rect) return;
+            const nx = (e.clientX - rect.left) / rect.width;
+            const ny = 1 - (e.clientY - rect.top) / rect.height;
+            setPointer([nx, ny]);
+        },
+        [cursorInteraction],
+    );
 
-  return (
-    <div
-      ref={containerRef}
-      className={cn("relative overflow-hidden", className)}
-      style={{ width, height }}
-      onPointerMove={handlePointerMove}
-    >
-      <Canvas
-        className="absolute inset-0"
-        gl={{ antialias: true, alpha: true }}
-        orthographic
-        camera={{
-          position: [0, 0, 1],
-          zoom: 1,
-          left: -1,
-          right: 1,
-          top: 1,
-          bottom: -1,
-        }}
-      >
-        <HoleScene
-          speed={speed}
-          zoom={zoom}
-          particleCount={particleCount}
-          orbSize={orbSize}
-          glow={glow}
-          contrast={contrast}
-          mirrorSplits={mirrorSplits}
-          warpEnabled={warpEnabled}
-          distanceFade={distanceFade}
-          colorShiftR={colorShiftR}
-          colorShiftG={colorShiftG}
-          colorShiftB={colorShiftB}
-          colorSpeed={colorSpeed}
-          backgroundColor={backgroundColor}
-          opacity={opacity}
-          pointer={pointer}
-          cursorInteraction={cursorInteraction}
-          cursorIntensity={cursorIntensity}
-        />
-      </Canvas>
-      {children && <div className="relative z-10">{children}</div>}
-    </div>
-  );
+    return (
+        <div
+            ref={containerRef}
+            className={cn("relative overflow-hidden", className)}
+            style={{width, height}}
+            onPointerMove={handlePointerMove}
+        >
+            <Canvas
+                className="absolute inset-0"
+                gl={{antialias: true, alpha: true}}
+                orthographic
+                camera={{
+                    position: [0, 0, 1],
+                    zoom: 1,
+                    left: -1,
+                    right: 1,
+                    top: 1,
+                    bottom: -1,
+                }}
+            >
+                <HoleScene
+                    speed={speed}
+                    zoom={zoom}
+                    particleCount={particleCount}
+                    orbSize={orbSize}
+                    glow={glow}
+                    contrast={contrast}
+                    mirrorSplits={mirrorSplits}
+                    warpEnabled={warpEnabled}
+                    distanceFade={distanceFade}
+                    colorShiftR={colorShiftR}
+                    colorShiftG={colorShiftG}
+                    colorShiftB={colorShiftB}
+                    colorSpeed={colorSpeed}
+                    backgroundColor={backgroundColor}
+                    opacity={opacity}
+                    pointer={pointer}
+                    cursorInteraction={cursorInteraction}
+                    cursorIntensity={cursorIntensity}
+                />
+            </Canvas>
+            {children && <div className="relative z-10">{children}</div>}
+        </div>
+    );
 };
 
 BlackHole.displayName = "BlackHole";

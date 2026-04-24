@@ -1,24 +1,13 @@
 import {lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {
-    Activity,
-    Download,
-    FileText,
-    Mic,
-    MicOff,
-    Phone,
-    Send,
-    Trash2,
-    Upload,
-} from "lucide-react";
-import {callLLM, useLlmAvailable} from "../lib/llm";
+import {Activity, Download, FileText, Mic, MicOff, Phone, Send, Trash2, Upload,} from "lucide-react";
+import {callLLM, reasonMessage} from "../lib/llm";
 import {useSpeech} from "../lib/speech";
 import {asStringArray, extractJson} from "../lib/extract";
 import CustomCursor from "../components/react-bits/custom-cursor";
 import {triage, type TriageResult} from "../lib/triage";
-import {VISITS, type Visit} from "../data/visits";
+import {type Visit, VISITS} from "../data/visits";
 import {cacheGet, cacheSet, hash32} from "../lib/cache";
 
-// Code-split: three.js adds ~800 kB raw. Only pay for it on this route.
 const GlitterWarp = lazy(() => import("../components/react-bits/glitter-warp"));
 
 type Tab = "recap" | "scribe" | "connect" | "contact";
@@ -183,7 +172,7 @@ const FIRST_VISIT: Visit = VISITS[0] ?? {
 };
 
 export function PostVisit() {
-    const llmReady = useLlmAvailable();
+    const llmReady = true;
     const [tab, setTab] = useState<Tab>("recap");
     const [visitId, setVisitId] = useState<string>(FIRST_VISIT.id);
     const visit: Visit = useMemo(
@@ -247,7 +236,7 @@ export function PostVisit() {
             const r = await callLLM({
                 system: `You are a patient companion answering a follow-up question from a patient about recommendation #${recIdx + 1} ("${rec}") from their last visit. Answer the actual question directly and helpfully, using general medical knowledge about the medication, diet, or action named in that recommendation (typical dosing, onset, common side effects, what to watch for, practical tips). Keep to at most 3 short sentences. Do not invent new prescriptions, lab results, or diagnoses. If the question is about a different recommendation in this visit, briefly redirect to that one by number. Only suggest contacting the doctor for truly individualized questions (exact personal dose changes, symptoms needing evaluation, emergencies) — never as a default deflection.\n\nContext: ${grounding}`,
                 messages: [{role: "user", content: q}],
-                maxTokens: 220,
+                maxTokens: 600,
                 temperature: 0.3,
             });
             setLoadingRec(null);
@@ -260,17 +249,9 @@ export function PostVisit() {
                 }));
                 return;
             }
-            const errText =
-                r.reason === "daily-cap"
-                    ? "Daily demo limit reached — please try again tomorrow."
-                    : r.reason === "rate-limit"
-                        ? "Too many questions in a row — wait a moment and try again."
-                        : r.reason === "turnstile"
-                            ? "Bot-check didn't complete. Reload the page and try again."
-                            : "Couldn't reach the assistant just now. Please try again in a moment.";
             setChatByRec((m) => ({
                 ...m,
-                [recIdx]: [...withQ, {id: withQ.length, from: "ai", text: errText, error: true}],
+                [recIdx]: [...withQ, {id: withQ.length, from: "ai", text: reasonMessage(r.reason), error: true}],
             }));
         },
         [chatByRec, questionByRec, llmReady, visit],

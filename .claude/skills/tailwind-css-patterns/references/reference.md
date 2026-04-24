@@ -1,8 +1,15 @@
 # Tailwind CSS Documentation
 
-Tailwind CSS is a utility-first CSS framework that generates styles by scanning HTML, JavaScript, and template files for class names. It provides a comprehensive design system through CSS utility classes, enabling rapid UI development without writing custom CSS. The framework operates at build-time, analyzing source files and generating only the CSS classes actually used in the project, resulting in optimized production bundles with zero runtime overhead.
+Tailwind CSS is a utility-first CSS framework that generates styles by scanning HTML, JavaScript, and template files for
+class names. It provides a comprehensive design system through CSS utility classes, enabling rapid UI development
+without writing custom CSS. The framework operates at build-time, analyzing source files and generating only the CSS
+classes actually used in the project, resulting in optimized production bundles with zero runtime overhead.
 
-The framework includes an extensive default color palette (18 colors with 11 shades each), responsive breakpoint system, customizable design tokens via CSS custom properties, and support for dark mode, pseudo-classes, pseudo-elements, and media queries through variant prefixes. Tailwind CSS v4.1 introduces CSS-first configuration using the `@theme` directive, native support for custom utilities via `@utility`, seamless integration with modern build tools through Vite, PostCSS, and framework-specific plugins, and enhanced arbitrary value syntax for maximum flexibility.
+The framework includes an extensive default color palette (18 colors with 11 shades each), responsive breakpoint system,
+customizable design tokens via CSS custom properties, and support for dark mode, pseudo-classes, pseudo-elements, and
+media queries through variant prefixes. Tailwind CSS v4.1 introduces CSS-first configuration using the `@theme`
+directive, native support for custom utilities via `@utility`, seamless integration with modern build tools through
+Vite, PostCSS, and framework-specific plugins, and enhanced arbitrary value syntax for maximum flexibility.
 
 ## Installation with Vite
 
@@ -503,6 +510,15 @@ Progressive enhancement
 
 ## Summary
 
-Tailwind CSS provides a complete utility-first design system that eliminates the need for writing custom CSS in most cases. The framework's primary use cases include rapid prototyping, building production applications with consistent design systems, creating responsive layouts, implementing dark mode, and maintaining design consistency across large teams. By using utility classes directly in markup, developers can iterate quickly, avoid naming conventions, and prevent CSS bloat since only used styles are generated.
+Tailwind CSS provides a complete utility-first design system that eliminates the need for writing custom CSS in most
+cases. The framework's primary use cases include rapid prototyping, building production applications with consistent
+design systems, creating responsive layouts, implementing dark mode, and maintaining design consistency across large
+teams. By using utility classes directly in markup, developers can iterate quickly, avoid naming conventions, and
+prevent CSS bloat since only used styles are generated.
 
-The v4.1 release enhances the developer experience with CSS-first configuration, eliminating JavaScript configuration files for most projects. Integration patterns include using the Vite plugin for modern frameworks, PostCSS for custom build pipelines, the Tailwind CLI for simple projects, and CDN scripts for rapid prototyping. The framework excels at component-driven development when combined with React, Vue, Svelte, or other modern frameworks, where utility classes are co-located with component logic. Custom design systems can be fully defined in CSS using `@theme`, with project-specific utilities and variants extending the framework's capabilities without writing JavaScript plugins.
+The v4.1 release enhances the developer experience with CSS-first configuration, eliminating JavaScript configuration
+files for most projects. Integration patterns include using the Vite plugin for modern frameworks, PostCSS for custom
+build pipelines, the Tailwind CLI for simple projects, and CDN scripts for rapid prototyping. The framework excels at
+component-driven development when combined with React, Vue, Svelte, or other modern frameworks, where utility classes
+are co-located with component logic. Custom design systems can be fully defined in CSS using `@theme`, with
+project-specific utilities and variants extending the framework's capabilities without writing JavaScript plugins.

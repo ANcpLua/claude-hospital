@@ -37,16 +37,16 @@ Live: https://claude-hospital.fly.dev
 
 ## Routes
 
-| Route | Demo | Source | Timestamp |
-|---|---|---|---|
-| `/` | Home grid | — | — |
-| `/well-baby` | Well-baby note generator | Graham | 12:13 |
-| `/postpartum` | 25-note analyzer (Sarah Connor) | Graham | 15:00 |
-| `/inhaler` | Dude Where's My Inhaler — 3 personas | Graham | 17:30 |
-| `/previsit` | PreVisit intake conversation | Michał | 25:00 |
-| `/medduties` | On-call scheduler | Michał | 28:30 |
-| `/postvisit` | PostVisit patient companion | Michał | 34:00 |
-| `/settings` | OpenWeather BYOK (optional) | — | — |
+| Route         | Demo                                 | Source | Timestamp |
+|---------------|--------------------------------------|--------|-----------|
+| `/`           | Home grid                            | —      | —         |
+| `/well-baby`  | Well-baby note generator             | Graham | 12:13     |
+| `/postpartum` | 25-note analyzer (Sarah Connor)      | Graham | 15:00     |
+| `/inhaler`    | Dude Where's My Inhaler — 3 personas | Graham | 17:30     |
+| `/previsit`   | PreVisit intake conversation         | Michał | 25:00     |
+| `/medduties`  | On-call scheduler                    | Michał | 28:30     |
+| `/postvisit`  | PostVisit patient companion          | Michał | 34:00     |
+| `/settings`   | OpenWeather BYOK (optional)          | —      | —         |
 
 ## ReactBits components
 

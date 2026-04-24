@@ -31,16 +31,16 @@ No institutional affiliation. No named patients. No commercial intent.
 
 ## 3. Routes
 
-| # | Route | Demo | Source | Webinar |
-|---|---|---|---|---|
-| — | `/` | Home grid | — | — |
-| 1 | `/well-baby` | Well-baby note generator | Graham | 12:13 |
-| 2 | `/postpartum` | 25-note analyzer (Sarah Connor) | Graham | 15:00 |
-| 3 | `/inhaler` | Dude Where's My Inhaler — 3 personas | Graham | 17:30 |
-| 4 | `/previsit` | Conversational pre-visit intake | Michał | 25:00 |
-| 5 | `/medduties` | On-call shift scheduler | Michał | 28:30 |
-| 6 | `/postvisit` | Post-visit patient companion | Michał | 34:00 |
-| — | `/settings` | Optional OpenWeather BYOK (Inhaler AQI) | — | — |
+| # | Route         | Demo                                    | Source | Webinar |
+|---|---------------|-----------------------------------------|--------|---------|
+| — | `/`           | Home grid                               | —      | —       |
+| 1 | `/well-baby`  | Well-baby note generator                | Graham | 12:13   |
+| 2 | `/postpartum` | 25-note analyzer (Sarah Connor)         | Graham | 15:00   |
+| 3 | `/inhaler`    | Dude Where's My Inhaler — 3 personas    | Graham | 17:30   |
+| 4 | `/previsit`   | Conversational pre-visit intake         | Michał | 25:00   |
+| 5 | `/medduties`  | On-call shift scheduler                 | Michał | 28:30   |
+| 6 | `/postvisit`  | Post-visit patient companion            | Michał | 34:00   |
+| — | `/settings`   | Optional OpenWeather BYOK (Inhaler AQI) | —      | —       |
 
 ## 4. Non-goals
 
@@ -80,6 +80,7 @@ No institutional affiliation. No named patients. No commercial intent.
 ```
 
 Every demo is a single route file in `src/routes/`, backed by:
+
 - `src/lib/` — shared helpers (llm, speech, cache, scheduler, etc.)
 - `src/data/` — synthetic datasets
 - `src/components/` — shared UI, plus `react-bits/` from the starter

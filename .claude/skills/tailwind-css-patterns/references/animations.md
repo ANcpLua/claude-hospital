@@ -10,17 +10,17 @@
 
 ### Transition Properties
 
-| Class | Description |
-|-------|-------------|
-| `transition` | All properties |
-| `transition-colors` | Color properties only |
-| `transition-opacity` | Opacity only |
-| `transition-transform` | Transform only |
-| `duration-150` | 150ms duration |
-| `duration-300` | 300ms duration |
-| `ease-in` | Ease in timing |
-| `ease-out` | Ease out timing |
-| `ease-in-out` | Ease in-out timing |
+| Class                  | Description           |
+|------------------------|-----------------------|
+| `transition`           | All properties        |
+| `transition-colors`    | Color properties only |
+| `transition-opacity`   | Opacity only          |
+| `transition-transform` | Transform only        |
+| `duration-150`         | 150ms duration        |
+| `duration-300`         | 300ms duration        |
+| `ease-in`              | Ease in timing        |
+| `ease-out`             | Ease out timing       |
+| `ease-in-out`          | Ease in-out timing    |
 
 ---
 

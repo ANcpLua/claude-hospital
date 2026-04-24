@@ -10,27 +10,43 @@ export interface CallOpts {
   readonly messages: ReadonlyArray<Message>;
   readonly maxTokens?: number;
   readonly temperature?: number;
-  readonly stream?: boolean;
   readonly responseFormat?: "text" | "json";
 }
 
+export type CallReason =
+  | "network"
+  | "provider-error"
+  | "rate-limit"
+  | "daily-cap"
+  | "turnstile";
+
 export type Result =
   | { readonly ok: true; readonly text: string }
-  | {
-      readonly ok: false;
-      readonly reason:
-        | "no-key"
-        | "network"
-        | "provider-error"
-        | "rate-limit"
-        | "daily-cap"
-        | "turnstile";
-      readonly error?: string;
-    };
+  | { readonly ok: false; readonly reason: CallReason; readonly error?: string };
 
 const DEFAULT_MAX_TOKENS = 1024;
 const DEFAULT_TEMPERATURE = 0.2;
 const PROXY_URL = "/api/gemini/generate";
+
+const REASON_COPY: Record<CallReason, string> = {
+  network: "Network error reaching the demo proxy.",
+  "provider-error": "Upstream model error.",
+  "rate-limit": "Too many requests — slow down for a minute.",
+  "daily-cap": "Daily demo limit reached — try again tomorrow.",
+  turnstile: "Bot check failed — refresh the page and retry.",
+};
+
+export function reasonMessage(reason: CallReason): string {
+  return REASON_COPY[reason];
+}
+
+export function safeParse<T>(s: string): T | null {
+  try {
+    return JSON.parse(s) as T;
+  } catch {
+    return null;
+  }
+}
 
 interface GoogleResponse {
   readonly candidates?: ReadonlyArray<{
@@ -43,29 +59,13 @@ interface ProxyErrorBody {
   readonly error?: string;
 }
 
-export function useLlmAvailable(): boolean {
-  return true;
-}
-
-export async function callLLM(opts: CallOpts): Promise<Result> {
-  return callViaProxy(opts);
-}
-
-export function callLLMStream(opts: CallOpts): AsyncIterable<string> {
-  return {
-    [Symbol.asyncIterator]() {
-      return streamFallback(opts);
-    },
-  };
-}
-
-async function* streamFallback(opts: CallOpts): AsyncIterator<string> {
-  const r = await callViaProxy(opts);
+export async function* callLLMStream(opts: CallOpts): AsyncIterable<string> {
+  const r = await callLLM(opts);
   if (!r.ok) throw Object.assign(new Error(r.error ?? r.reason), { reason: r.reason });
   if (r.text.length > 0) yield r.text;
 }
 
-async function callViaProxy(opts: CallOpts): Promise<Result> {
+export async function callLLM(opts: CallOpts): Promise<Result> {
   let token: string;
   try {
     token = await getTurnstileToken();
@@ -93,18 +93,11 @@ async function callViaProxy(opts: CallOpts): Promise<Result> {
 
   const text = await r.text();
   if (!r.ok) {
-    const parsed = safeParse<ProxyErrorBody>(text);
-    const kind = parsed?.error ?? "";
-    if (r.status === 429 && kind === "daily-cap") {
-      return { ok: false, reason: "daily-cap", error: "Daily demo limit reached — try again tomorrow." };
-    }
-    if (r.status === 429) {
-      return { ok: false, reason: "rate-limit", error: "Too many requests — slow down." };
-    }
-    if (r.status === 403 && kind === "turnstile-failed") {
-      return { ok: false, reason: "turnstile", error: "Bot check failed." };
-    }
-    return { ok: false, reason: "provider-error", error: kind.length > 0 ? kind : text.slice(0, 200) };
+    const kind = safeParse<ProxyErrorBody>(text)?.error ?? "";
+    if (r.status === 429 && kind === "daily-cap") return fail("daily-cap");
+    if (r.status === 429) return fail("rate-limit");
+    if (r.status === 403 && kind === "turnstile-failed") return fail("turnstile");
+    return { ok: false, reason: "provider-error", error: kind || text.slice(0, 200) };
   }
 
   const data = safeParse<GoogleResponse>(text);
@@ -116,12 +109,8 @@ async function callViaProxy(opts: CallOpts): Promise<Result> {
   return { ok: true, text: parts.map((p) => p.text ?? "").join("") };
 }
 
-function safeParse<T>(s: string): T | null {
-  try {
-    return JSON.parse(s) as T;
-  } catch {
-    return null;
-  }
+function fail(reason: CallReason): Result {
+  return { ok: false, reason, error: REASON_COPY[reason] };
 }
 
 function errMsg(e: unknown): string {

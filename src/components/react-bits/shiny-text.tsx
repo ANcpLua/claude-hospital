@@ -1,10 +1,10 @@
-import { cn } from "@/lib/utils";
+import {cn} from "@/lib/utils";
 
 export interface ShinyTextProps {
-  readonly text: string;
-  readonly speed?: number;
-  readonly className?: string;
-  readonly disabled?: boolean;
+    readonly text: string;
+    readonly speed?: number;
+    readonly className?: string;
+    readonly disabled?: boolean;
 }
 
 /**
@@ -13,19 +13,19 @@ export interface ShinyTextProps {
  * prefers-reduced-motion (media query in src/index.css).
  */
 export function ShinyText({
-  text,
-  speed = 4,
-  className,
-  disabled = false,
-}: ShinyTextProps) {
-  return (
-    <span
-      className={cn("shiny-text", disabled && "shiny-text-off", className)}
-      style={{ animationDuration: `${speed}s` }}
-      data-text={text}
-    >
+                              text,
+                              speed = 4,
+                              className,
+                              disabled = false,
+                          }: ShinyTextProps) {
+    return (
+        <span
+            className={cn("shiny-text", disabled && "shiny-text-off", className)}
+            style={{animationDuration: `${speed}s`}}
+            data-text={text}
+        >
       {text}
-      <style>{`
+            <style>{`
         .shiny-text {
           position: relative;
           display: inline-block;
@@ -68,7 +68,7 @@ export function ShinyText({
         }
       `}</style>
     </span>
-  );
+    );
 }
 
 export default ShinyText;
