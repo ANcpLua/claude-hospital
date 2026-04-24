@@ -382,11 +382,13 @@ export function WellBaby() {
         <h2 className="font-semibold text-ink-800 dark:text-ink-100 mb-2 text-sm">
           Screening checklist — {PROFILE_LABELS[b.profile]}
         </h2>
-        <ul className="grid sm:grid-cols-2 gap-1 text-sm">
+        <ul className="flex flex-wrap gap-1.5 text-xs">
           {SCREENINGS[b.profile].map((s) => (
-            <li key={s} className="flex gap-2 items-start">
-              <span className="mt-1 h-3 w-3 rounded border border-ink-300 dark:border-ink-700 shrink-0" />
-              <span>{s}</span>
+            <li
+              key={s}
+              className="rounded-full border border-teal-600/30 bg-teal-50 dark:bg-teal-900/20 text-teal-800 dark:text-teal-200 px-2.5 py-1"
+            >
+              {s}
             </li>
           ))}
         </ul>

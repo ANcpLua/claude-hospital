@@ -3,6 +3,10 @@ app = "claude-hospital"
 primary_region = "fra"
 
 [build]
+  [build.args]
+    # Public Turnstile site key — safe to commit, inlined into the
+    # client bundle by Vite at build time.
+    VITE_TURNSTILE_SITE_KEY = "0x4AAAAAADCite1PYePcMoRY"
 
 [http_service]
   internal_port = 8080

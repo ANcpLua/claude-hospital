@@ -1,7 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-
-// Lazy-load Threads so MedDuties' WebGL hero doesn't bloat the main bundle.
-const Threads = lazy(() => import("../components/react-bits/threads"));
+import { useEffect, useMemo, useState } from "react";
 import { Send, Calendar, Download } from "lucide-react";
 import {
   applyIntent,
@@ -248,74 +245,40 @@ export function MedDuties() {
 
   return (
     <div className="space-y-6">
-      <header className="relative rounded-xl overflow-hidden border border-ink-200 dark:border-ink-800 bg-[#0b0b1e]">
-        <Suspense fallback={<div style={{ height: 260 }} />}>
-          <div style={{ height: 260 }}>
-            <Threads
-              color={[0.38, 0.4, 0.95]}
-              amplitude={1.1}
-              distance={0.3}
-              enableMouseInteraction
-            />
-          </div>
-        </Suspense>
-        <div
-          className="absolute inset-0 z-10 pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(to right, rgba(10,10,30,0.75) 0%, rgba(10,10,30,0.3) 55%, rgba(10,10,30,0) 100%)",
-          }}
-        />
-        <div className="absolute inset-0 z-20 flex flex-col justify-between gap-3 p-6 sm:p-8 pointer-events-none">
-          <div className="flex items-start justify-between gap-3">
-            <p
-              className="text-[11px] uppercase tracking-[0.18em] text-indigo-200 font-medium max-w-sm"
-              style={{ textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}
-            >
-              On-call rota · deterministic solver + LLM conversational layer
-            </p>
-            <div className="flex items-center gap-1 text-sm pointer-events-auto">
-              <button
-                type="button"
-                onClick={() => shiftMonth(-1)}
-                className="px-2 py-1 border border-white/20 bg-white/10 text-white backdrop-blur-sm rounded-md hover:bg-white/20"
-                aria-label="Previous month"
-              >
-                ‹
-              </button>
-              <span className="px-3 py-1 border border-white/20 bg-white/10 text-white backdrop-blur-sm rounded-md tabular-nums">
-                {year}-{String(month).padStart(2, "0")}
-              </span>
-              <button
-                type="button"
-                onClick={() => shiftMonth(1)}
-                className="px-2 py-1 border border-white/20 bg-white/10 text-white backdrop-blur-sm rounded-md hover:bg-white/20"
-                aria-label="Next month"
-              >
-                ›
-              </button>
-            </div>
-          </div>
-          <div className="max-w-xl">
-            <h1
-              className="display text-4xl sm:text-5xl font-semibold tracking-tight text-white"
-              style={{ textShadow: "0 2px 12px rgba(0,0,0,0.65)" }}
-            >
-              MedDuties
-            </h1>
-            <p
-              className="mt-2 text-sm text-white/90"
-              style={{ textShadow: "0 1px 8px rgba(0,0,0,0.65)" }}
-            >
-              Paint a doctor's <em>avoid</em> and <em>reluctant</em> days onto
-              the calendar, hit{" "}
-              <kbd className="px-1 py-0.5 text-[10px] rounded bg-white/15 text-white border border-white/25">
-                Generate
-              </kbd>
-              , then talk to the schedule in plain language. Wishes carry
-              across months.
-            </p>
-          </div>
+      <header className="flex items-start flex-wrap justify-between gap-3 border-l-4 border-indigo-500 pl-4">
+        <div className="space-y-1">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-indigo-700 dark:text-indigo-300 font-medium">
+            On-call rota · deterministic solver + LLM conversational layer
+          </p>
+          <h1 className="display text-3xl sm:text-4xl font-semibold tracking-tight text-ink-900 dark:text-ink-100">
+            MedDuties
+          </h1>
+          <p className="max-w-xl text-sm text-ink-600 dark:text-ink-300">
+            Paint a doctor's <em>avoid</em> and <em>reluctant</em> days onto the
+            calendar, hit <kbd className="px-1 py-0.5 text-[10px] rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800">Generate</kbd>,
+            then talk to the schedule in plain language. Wishes carry across months.
+          </p>
+        </div>
+        <div className="flex items-center gap-1 text-sm">
+          <button
+            type="button"
+            onClick={() => shiftMonth(-1)}
+            className="px-2 py-1 border border-ink-300 dark:border-ink-700 rounded-md hover:bg-ink-50 dark:hover:bg-ink-800"
+            aria-label="Previous month"
+          >
+            ‹
+          </button>
+          <span className="px-3 py-1 border border-ink-300 dark:border-ink-700 rounded-md bg-white dark:bg-ink-900 tabular-nums">
+            {year}-{String(month).padStart(2, "0")}
+          </span>
+          <button
+            type="button"
+            onClick={() => shiftMonth(1)}
+            className="px-2 py-1 border border-ink-300 dark:border-ink-700 rounded-md hover:bg-ink-50 dark:hover:bg-ink-800"
+            aria-label="Next month"
+          >
+            ›
+          </button>
         </div>
       </header>
 
