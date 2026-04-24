@@ -541,7 +541,7 @@ export function PreVisit() {
                                     className={`max-w-[85%] px-3 py-2 rounded-lg text-sm whitespace-pre-wrap ${
                                         m.from === "ai"
                                             ? "bg-ink-100 dark:bg-ink-800 text-ink-800 dark:text-ink-100"
-                                            : "bg-teal-600 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400"
+                                            : "bg-teal-600 dark:bg-teal-500/10 text-white dark:text-teal-100"
                                     }`}
                                 >
                                     {m.from === "ai" ? <GlossedText text={m.text}/> : m.text}
