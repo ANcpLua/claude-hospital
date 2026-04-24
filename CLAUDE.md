@@ -11,7 +11,7 @@ Live: https://claude-hospital.fly.dev
 
 ## Hard constraints
 
-- **Stack:** React 19, Vite 6, TypeScript strict, Tailwind 4. No `any`,
+- **Stack:** React 19, Vite 8, TypeScript 6 strict, Tailwind 4. No `any`,
   no `@ts-ignore`, no null-forgiving `!`.
 - **Zero backend.** Static bundle served by nginx. No server-side
   rendering, no API routes, no shared state.
