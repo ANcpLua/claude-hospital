@@ -328,6 +328,11 @@ async function handleGenerate(req: Request): Promise<Response> {
         generationConfig: {
             maxOutputTokens: body.maxTokens ?? 1024,
             temperature: body.temperature ?? 0.2,
+            // Gemini 3 reasoning models default to thinking, which silently
+            // eats hundreds of output tokens before producing visible text.
+            // For clinical-template demos thinking is dead weight — disable it
+            // so maxOutputTokens maps 1:1 to visible content.
+            thinkingConfig: {thinkingBudget: 0},
             ...(body.responseFormat === "json" ? {responseMimeType: "application/json"} : {}),
         },
     });
