@@ -16,6 +16,7 @@ interface TurnstileApi {
             "expired-callback"?: () => void;
             theme?: "light" | "dark" | "auto";
             size?: "normal" | "flexible" | "compact" | "invisible";
+            appearance?: "always" | "execute" | "interaction-only";
         },
     ) => string;
     reset: (widgetId: string) => void;
