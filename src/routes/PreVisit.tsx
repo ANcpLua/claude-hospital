@@ -543,13 +543,6 @@ export function PreVisit() {
         </div>
       </header>
 
-      {!llmReady && (
-        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          No LLM key configured — running the scripted demo path. Add a key in
-          Settings for a real conversation.
-        </div>
-      )}
-
       <div className="grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-6">
         <section className="space-y-3">
           <div className="rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 p-3">
