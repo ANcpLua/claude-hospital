@@ -59,7 +59,7 @@ type ViewState =
     | { readonly status: "ready"; readonly rendered: RenderedView }
     | { readonly status: "error"; readonly message: string };
 
-const CACHE_KEY = "meduni-postpartum-cache-v1";
+const CACHE_KEY = "meduni-postpartum-cache-v2";
 
 function loadCache(): Partial<Record<View, RenderedView>> {
     try {
