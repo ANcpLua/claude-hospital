@@ -91,18 +91,17 @@ function fail(err: Error): void {
 
 function ensureWidget(): void {
     if (widgetId !== null || !window.turnstile || !mountEl || !SITE_KEY) return;
+    // Managed mode: the widget renders itself, auto-solves for most users,
+    // and shows an interactive challenge when Cloudflare deems it necessary.
     widgetId = window.turnstile.render(mountEl, {
         sitekey: SITE_KEY,
         theme: "auto",
-        size: "invisible",
         callback: (token) => deliver(token),
         "error-callback": (err) => fail(new Error(`turnstile: ${err}`)),
         "expired-callback": () => {
             currentToken = null;
         },
     });
-    // Invisible widgets need an explicit execute to emit the first token.
-    window.turnstile.execute(widgetId);
 }
 
 export function mountTurnstile(container: HTMLElement): void {
