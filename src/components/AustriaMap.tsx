@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 export interface AustriaHospital {
   readonly name: string;
@@ -115,7 +115,6 @@ function labelPlacement(
 
 export function AustriaMap({ hospitals, onSelect, selectedName }: Props) {
   const clusters = useMemo(() => buildClusters(hospitals), [hospitals]);
-  const [openCluster, setOpenCluster] = useState<string | null>(null);
 
   const outlinePath =
     OUTLINE.map(([lat, lng], i) => {
@@ -123,7 +122,12 @@ export function AustriaMap({ hospitals, onSelect, selectedName }: Props) {
       return `${i === 0 ? "M" : "L"} ${x.toFixed(3)},${y.toFixed(3)}`;
     }).join(" ") + " Z";
 
-  const open = clusters.find((c) => c.label === openCluster);
+  // Cluster click selects the worst-AQI member; disambiguation happens
+  // in the ranking list below the map (avoids a redundant drawer).
+  function handleClusterClick(c: Cluster): void {
+    const worst = c.members.reduce((a, b) => (a.aqi >= b.aqi ? a : b));
+    onSelect(worst);
+  }
 
   return (
     <div className="space-y-3">
@@ -155,16 +159,12 @@ export function AustriaMap({ hospitals, onSelect, selectedName }: Props) {
           const selected =
             selectedName !== undefined && c.members.some((m) => m.name === selectedName);
           const { tx, ty, anchor } = labelPlacement(cx, cy);
-          const isOpen = openCluster === c.label;
           const labelWidth = Math.max(1.3, c.label.length * 0.08);
           return (
             <g
               key={c.label}
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                if (c.members.length === 1) onSelect(c.members[0]!);
-                else setOpenCluster(isOpen ? null : c.label);
-              }}
+              onClick={() => handleClusterClick(c)}
               className="cursor-pointer"
             >
               <line
@@ -237,39 +237,6 @@ export function AustriaMap({ hospitals, onSelect, selectedName }: Props) {
           );
         })}
       </svg>
-
-      {open && open.members.length > 1 && (
-        <div className="rounded-md border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 p-3">
-          <div className="caption text-ink-500 dark:text-ink-400 mb-2">
-            {open.label} · {open.members.length} sites
-          </div>
-          <ul className="space-y-1">
-            {open.members.map((m) => {
-              const active = selectedName === m.name;
-              return (
-                <li key={m.name}>
-                  <button
-                    type="button"
-                    onClick={() => onSelect(m)}
-                    className={`w-full flex items-center gap-3 text-left px-2 py-1 rounded cursor-pointer ${
-                      active
-                        ? "bg-teal-600/10 dark:bg-teal-400/15"
-                        : "hover:bg-cream-100 dark:hover:bg-ink-800"
-                    }`}
-                  >
-                    <span
-                      className="inline-block h-2 w-2 rounded-full"
-                      style={{ background: BUCKET_STROKE[aqiBucket(m.aqi)] }}
-                    />
-                    <span className="flex-1 text-sm text-ink-800 dark:text-ink-100">{m.name}</span>
-                    <span className="mono text-xs text-ink-500 dark:text-ink-400">AQI {m.aqi}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }
