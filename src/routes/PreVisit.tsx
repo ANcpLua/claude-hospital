@@ -523,13 +523,13 @@ export function PreVisit() {
                 </div>
             </header>
 
-            <div className="grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-6">
+            <div className="grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-6 items-start">
                 <section className="space-y-3">
                     <div className="rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 p-3">
                         <ProgressBar extracted={extracted}/>
                     </div>
                     <div
-                        className="rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 p-4 space-y-3 max-h-[26rem] overflow-y-auto"
+                        className="rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 p-4 space-y-3 min-h-[28rem] max-h-[34rem] overflow-y-auto"
                         aria-live="polite"
                     >
                         {messages.map((m) => (
@@ -572,7 +572,7 @@ export function PreVisit() {
                             if (status.state === "thinking") return;
                             void sendUserMessage(draft);
                         }}
-                        className="flex flex-wrap gap-2 items-start"
+                        className="flex items-stretch gap-2 rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 p-2 focus-within:ring-2 focus-within:ring-teal-500/40"
                     >
             <textarea
                 id="previsit-draft"
@@ -581,50 +581,50 @@ export function PreVisit() {
                 autoComplete="off"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        if (status.state === "thinking" || sessionEnded) return;
+                        if (draft.trim().length === 0) return;
+                        void sendUserMessage(draft);
+                    }
+                }}
                 disabled={sessionEnded}
-                rows={2}
+                rows={1}
                 placeholder={
                     sessionEnded
                         ? "Session ended."
                         : speech.interim
                             ? speech.interim
-                            : "Type or use the mic to dictate…"
+                            : "Type or use the mic to dictate…  (Enter to send · Shift+Enter for newline)"
                 }
-                className="flex-1 rounded-md border border-ink-300 dark:border-ink-700 p-2 text-sm min-w-[14rem]"
+                className="flex-1 resize-none bg-transparent px-2 py-1.5 text-sm leading-relaxed focus:outline-none"
             />
-                        <div className="flex flex-col gap-2">
-                            {speechSupported && (
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        speech.status.state === "listening" ? speech.stop() : speech.start()
-                                    }
-                                    disabled={sessionEnded}
-                                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-sm border ${
-                                        speech.status.state === "listening"
-                                            ? "bg-rose-600 text-white border-rose-600 hover:bg-rose-700"
-                                            : "bg-white dark:bg-ink-900 text-ink-700 dark:text-ink-200 border-ink-300 dark:border-ink-700 hover:bg-ink-50 dark:hover:bg-ink-800"
-                                    } disabled:opacity-50`}
-                                >
-                                    {speech.status.state === "listening" ? (
-                                        <>
-                                            <MicOff size={14}/> Stop
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Mic size={14}/> Voice
-                                        </>
-                                    )}
-                                </button>
-                            )}
+                        {speechSupported && (
                             <button
-                                type="submit"
-                                disabled={sessionEnded || draft.trim().length === 0 || status.state === "thinking"}
-                                className="inline-flex items-center gap-1.5 bg-teal-600 dark:bg-teal-500 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-teal-700 dark:hover:bg-teal-400 disabled:opacity-50"
+                                type="button"
+                                aria-label={speech.status.state === "listening" ? "Stop voice input" : "Start voice input"}
+                                onClick={() =>
+                                    speech.status.state === "listening" ? speech.stop() : speech.start()
+                                }
+                                disabled={sessionEnded}
+                                className={`inline-flex items-center justify-center w-10 self-stretch rounded-md text-sm border transition ${
+                                    speech.status.state === "listening"
+                                        ? "bg-rose-600 text-white border-rose-600 hover:bg-rose-700 animate-pulse"
+                                        : "bg-white dark:bg-ink-900 text-ink-700 dark:text-ink-200 border-ink-300 dark:border-ink-700 hover:bg-ink-50 dark:hover:bg-ink-800"
+                                } disabled:opacity-50`}
                             >
-                                <Send size={14}/> Send
+                                {speech.status.state === "listening" ? <MicOff size={16}/> : <Mic size={16}/>}
                             </button>
-                        </div>
+                        )}
+                        <button
+                            type="submit"
+                            aria-label="Send message"
+                            disabled={sessionEnded || draft.trim().length === 0 || status.state === "thinking"}
+                            className="inline-flex items-center justify-center w-12 self-stretch bg-teal-600 dark:bg-teal-500 text-white rounded-md hover:bg-teal-700 dark:hover:bg-teal-400 disabled:opacity-40 transition"
+                        >
+                            <Send size={16}/>
+                        </button>
                     </form>
 
                     {speech.status.state === "denied" && (
@@ -640,47 +640,11 @@ export function PreVisit() {
                     {speech.interim && (
                         <p className="text-xs text-ink-500 dark:text-ink-400 italic">…{speech.interim}</p>
                     )}
-
-                    <section
-                        className="rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 p-4 space-y-2">
-                        <h2 className="font-semibold text-ink-800 dark:text-ink-100 text-sm">
-                            Medication-import module
-                        </h2>
-                        <p className="text-xs text-ink-500 dark:text-ink-400">
-                            Patient (or spouse) taps common meds to add them to the doctor's
-                            summary directly.
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
-                            {COMMON_MEDS.map((m) => {
-                                const on = extracted.meds.some(
-                                    (x) =>
-                                        x.name.toLowerCase() === m.name.toLowerCase() &&
-                                        x.dose.toLowerCase() === m.dose.toLowerCase(),
-                                );
-                                return (
-                                    <button
-                                        key={`${m.name}-${m.dose}`}
-                                        type="button"
-                                        onClick={() => importMed(m)}
-                                        disabled={on}
-                                        className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border ${
-                                            on
-                                                ? "bg-teal-600 dark:bg-teal-500 text-white border-teal-600 dark:border-teal-400 cursor-default"
-                                                : "bg-white dark:bg-ink-900 text-ink-700 dark:text-ink-200 border-ink-300 dark:border-ink-700 hover:bg-ink-50 dark:hover:bg-ink-800"
-                                        }`}
-                                    >
-                                        {!on && <Plus size={12}/>}
-                                        {m.name} {m.dose}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </section>
                 </section>
 
-                <aside className="space-y-3">
+                <aside className="space-y-3 lg:sticky lg:top-4">
                     <section
-                        className="rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 p-4 space-y-3 sticky top-4">
+                        className="rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 p-4 space-y-3">
                         <h2 className="font-semibold text-ink-800 dark:text-ink-100 text-sm">
                             Live extraction
                         </h2>
@@ -742,6 +706,42 @@ export function PreVisit() {
                                 {summaryLoading ? "Drafting…" : summary ? "Regenerate summary" : "Draft doctor summary"}
                             </button>
                         )}
+                    </section>
+
+                    <section
+                        className="rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 p-4 space-y-2">
+                        <h2 className="font-semibold text-ink-800 dark:text-ink-100 text-sm">
+                            Medication-import module
+                        </h2>
+                        <p className="text-xs text-ink-500 dark:text-ink-400">
+                            Patient (or spouse) taps common meds to add them to the doctor's
+                            summary directly.
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                            {COMMON_MEDS.map((m) => {
+                                const on = extracted.meds.some(
+                                    (x) =>
+                                        x.name.toLowerCase() === m.name.toLowerCase() &&
+                                        x.dose.toLowerCase() === m.dose.toLowerCase(),
+                                );
+                                return (
+                                    <button
+                                        key={`${m.name}-${m.dose}`}
+                                        type="button"
+                                        onClick={() => importMed(m)}
+                                        disabled={on}
+                                        className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border ${
+                                            on
+                                                ? "bg-teal-600 dark:bg-teal-500 text-white border-teal-600 dark:border-teal-400 cursor-default"
+                                                : "bg-white dark:bg-ink-900 text-ink-700 dark:text-ink-200 border-ink-300 dark:border-ink-700 hover:bg-ink-50 dark:hover:bg-ink-800"
+                                        }`}
+                                    >
+                                        {!on && <Plus size={12}/>}
+                                        {m.name} {m.dose}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </section>
                 </aside>
             </div>
