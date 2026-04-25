@@ -25,6 +25,17 @@
 //   ALLOWED_ORIGINS         comma list (defaults below)
 //   PORT                    default 8080
 
+import {
+    type AttemptResult,
+    type DailyState,
+    type RateLimit,
+    checkDaily,
+    checkRate,
+    callWithRetry,
+    sweepRateLog,
+    todayUtc,
+} from "./lib";
+
 declare const Bun: {
     serve: (opts: {
         port: number;
@@ -90,12 +101,8 @@ interface CallBody {
 
 const ipLog = new Map<string, number[]>();
 const IP_LOG_MAX = 10_000;
-let today = todayUtc();
-let dayCount = 0;
-
-function todayUtc(): string {
-    return new Date().toISOString().slice(0, 10);
-}
+const IP_RATE: RateLimit = {limit: IP_LIMIT, windowMs: IP_WINDOW_MS};
+const daily: DailyState = {day: todayUtc(new Date()), count: 0};
 
 function isOwner(ip: string): boolean {
     return OWNER_IPS.has(ip);
@@ -103,39 +110,10 @@ function isOwner(ip: string): boolean {
 
 function checkIp(ip: string): boolean {
     if (isOwner(ip)) return true;
-    const now = Date.now();
-    const arr = (ipLog.get(ip) ?? []).filter((t) => now - t < IP_WINDOW_MS);
-    if (arr.length >= IP_LIMIT) {
-        ipLog.set(ip, arr);
-        return false;
-    }
-    arr.push(now);
-    ipLog.set(ip, arr);
-    return true;
+    return checkRate(ipLog, ip, Date.now(), IP_RATE);
 }
 
-function sweepIpLog(): void {
-    const cutoff = Date.now() - IP_WINDOW_MS;
-    for (const [ip, arr] of ipLog) {
-        const trimmed = arr.filter((t) => t > cutoff);
-        if (trimmed.length === 0) ipLog.delete(ip);
-        else if (trimmed.length !== arr.length) ipLog.set(ip, trimmed);
-    }
-    if (ipLog.size > IP_LOG_MAX) ipLog.clear();
-}
-
-setInterval(sweepIpLog, IP_WINDOW_MS);
-
-function checkDaily(): boolean {
-    const t = todayUtc();
-    if (t !== today) {
-        today = t;
-        dayCount = 0;
-    }
-    if (dayCount >= DAILY_CAP) return false;
-    dayCount += 1;
-    return true;
-}
+setInterval(() => sweepRateLog(ipLog, Date.now(), IP_WINDOW_MS, IP_LOG_MAX), IP_WINDOW_MS);
 
 function clientIp(req: Request): string {
     return (
@@ -163,13 +141,7 @@ function json(body: unknown, status: number, origin: string | null): Response {
     });
 }
 
-interface UpstreamResult {
-    readonly status: number;
-    readonly body: string;
-    readonly attempts: number;
-}
-
-async function callGeminiOnce(payload: string): Promise<{ status: number; body: string }> {
+async function callGeminiOnce(payload: string): Promise<AttemptResult> {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), GEMINI_TIMEOUT_MS);
     try {
@@ -182,53 +154,10 @@ async function callGeminiOnce(payload: string): Promise<{ status: number; body: 
             body: payload,
             signal: ctrl.signal,
         });
-        const body = await r.text();
-        return {status: r.status, body};
+        return {status: r.status, body: await r.text()};
     } finally {
         clearTimeout(timer);
     }
-}
-
-function shouldRetry(status: number): boolean {
-    return status === 429 || (status >= 500 && status <= 599);
-}
-
-async function callGeminiWithRetry(payload: string): Promise<UpstreamResult> {
-    let lastStatus = 0;
-    let lastBody = "";
-    for (let attempt = 1; attempt <= RETRY_MAX; attempt++) {
-        try {
-            const r = await callGeminiOnce(payload);
-            lastStatus = r.status;
-            lastBody = r.body;
-            if (r.status >= 200 && r.status < 300) {
-                if (attempt > 1) {
-                    console.warn(`[llm] recovered after ${attempt} attempts (model=${GEMINI_MODEL})`);
-                }
-                return {status: r.status, body: r.body, attempts: attempt};
-            }
-            if (!shouldRetry(r.status)) {
-                console.warn(`[llm] non-retryable ${r.status}: ${r.body.slice(0, 200)}`);
-                return {status: r.status, body: r.body, attempts: attempt};
-            }
-            console.warn(
-                `[llm] attempt ${attempt}/${RETRY_MAX} got ${r.status} — backing off`,
-            );
-        } catch (e) {
-            lastStatus = 0;
-            lastBody = JSON.stringify({error: {message: errMsg(e)}});
-            console.warn(`[llm] attempt ${attempt}/${RETRY_MAX} threw: ${errMsg(e)}`);
-        }
-        if (attempt < RETRY_MAX) {
-            const backoff = RETRY_BASE_MS * Math.pow(2, attempt - 1);
-            const jitter = Math.floor(Math.random() * RETRY_BASE_MS);
-            await new Promise((res) => setTimeout(res, backoff + jitter));
-        }
-    }
-    console.error(
-        `[llm] EXHAUSTED ${RETRY_MAX} attempts — last status=${lastStatus} model=${GEMINI_MODEL}`,
-    );
-    return {status: lastStatus || 503, body: lastBody, attempts: RETRY_MAX};
 }
 
 function handleOptions(req: Request): Response {
@@ -267,7 +196,9 @@ async function handleGenerate(req: Request): Promise<Response> {
     const messages = body.messages ?? [];
     if (messages.length === 0) return json({error: "empty-messages"}, 400, origin);
 
-    if (!checkDaily()) return json({error: "daily-cap"}, 429, origin);
+    if (!checkDaily(daily, DAILY_CAP, new Date())) {
+        return json({error: "daily-cap"}, 429, origin);
+    }
 
     const payload = JSON.stringify({
         system_instruction: {parts: [{text: system}]},
@@ -287,7 +218,16 @@ async function handleGenerate(req: Request): Promise<Response> {
         },
     });
 
-    const upstream = await callGeminiWithRetry(payload);
+    const upstream = await callWithRetry(
+        () => callGeminiOnce(payload),
+        {
+            maxAttempts: RETRY_MAX,
+            baseMs: RETRY_BASE_MS,
+            sleep: (ms) => new Promise((res) => setTimeout(res, ms)),
+            random: Math.random,
+        },
+        (level, msg) => (level === "error" ? console.error : console.warn)(`[llm] ${msg} (model=${GEMINI_MODEL})`),
+    );
     const headers: Record<string, string> = {
         "content-type": "application/json; charset=utf-8",
         "x-llm-attempts": String(upstream.attempts),
@@ -330,10 +270,6 @@ async function serveStatic(pathname: string): Promise<Response> {
             "cache-control": "no-cache",
         },
     });
-}
-
-function errMsg(e: unknown): string {
-    return e instanceof Error ? e.message : String(e);
 }
 
 Bun.serve({

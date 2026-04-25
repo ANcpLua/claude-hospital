@@ -15,3 +15,9 @@ coverage
 .env
 .env.local
 .env.*.local
+
+# Playwright artifacts
+test-results
+playwright-report
+blob-report
+.playwright-mcp
