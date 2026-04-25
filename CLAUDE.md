@@ -102,3 +102,13 @@ registry-sourced. License key lives in `REACTBITS_LICENSE_KEY` env at
   `components/TrendChart.tsx`).
 - Comments that restate well-named code.
 - Feature flags for a single-session change.
+
+## Gotchas
+
+- **Gemini quota by model.** `gemini-3-flash-preview` has a low free-tier
+  cap (~20 req/day as of writing); `gemini-flash-lite-latest` is much
+  more generous. If `npm run test:e2e:prod` (or the CI e2e job) returns
+  `RESOURCE_EXHAUSTED` 429s, check
+  https://console.cloud.google.com/billing for the project that owns
+  `GEMINI_KEY` — Tier 1 limits apply only once billing is actually
+  attached, regardless of the key's display name.
