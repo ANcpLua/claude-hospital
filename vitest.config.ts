@@ -5,8 +5,8 @@ import {defineConfig} from "vitest/config";
 export default defineConfig({
     test: {
         environment: "node",
-        // Only the proxy is unit-tested. Routes are covered by Playwright.
-        include: ["server/**/*.test.ts"],
+        // Pure logic only. UI is covered by Playwright.
+        include: ["server/**/*.test.ts", "src/**/*.test.ts"],
         reporters: "default",
     },
 });

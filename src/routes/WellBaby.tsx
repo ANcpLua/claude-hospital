@@ -2,6 +2,7 @@ import {useEffect, useMemo, useState} from "react";
 import {Activity, Baby, Copy, Download, HeartPulse, Sparkles, Weight} from "lucide-react";
 import {type Profile, PROFILE_LABELS, SCREENINGS,} from "../lib/screening";
 import {callLLM} from "../lib/llm";
+import {NARRATIVE_SYSTEM, type NarrativeSections, parseNarrative} from "../lib/narrative";
 import {DashboardHeader} from "../components/DashboardHeader";
 
 interface Baby {
@@ -35,21 +36,6 @@ const DEFAULTS: Baby = {
     feeding: "breast",
     profile: "california",
 };
-
-const NARRATIVE_SYSTEM = `You are a neonatology assistant drafting the Assessment and Plan sections of a well-baby nursery note. You will receive the structured inputs as JSON. Output exactly two paragraphs labelled "Assessment:" and "Plan:" with no other headings or lists. Never invent numbers that aren't in the input. If any input is abnormal, name it explicitly and briefly say why. Max 120 words total.`;
-
-interface NarrativeSections {
-    readonly assessment: string;
-    readonly plan: string;
-}
-
-function parseNarrative(raw: string): NarrativeSections | null {
-    const text = raw.replace(/\r\n/g, "\n").trim();
-    const re = /Assessment\s*:?\s*([\s\S]*?)\n\s*Plan\s*:?\s*([\s\S]*)$/i;
-    const m = text.match(re);
-    if (!m) return null;
-    return {assessment: m[1].trim(), plan: m[2].trim()};
-}
 
 type NarrativeState =
     | { readonly status: "default" }
@@ -163,8 +149,9 @@ export function WellBaby() {
                     ),
                 },
             ],
-            maxTokens: 240,
+            maxTokens: 600,
             temperature: 0.2,
+            responseFormat: "json",
         });
         if (!r.ok) {
             setNarrative({status: "error", message: r.error ?? r.reason});
@@ -174,7 +161,7 @@ export function WellBaby() {
         if (!parsed) {
             setNarrative({
                 status: "error",
-                message: "LLM output didn't include Assessment / Plan headings.",
+                message: "LLM response wasn't valid JSON with assessment + plan fields.",
             });
             return;
         }
