@@ -58,7 +58,7 @@ export function DashboardHeader({
             )}
             <div className="relative grid gap-4 p-5 sm:p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                 <div className="space-y-2 min-w-0">
-                    <p className="caption text-teal-700 dark:text-teal-400">
+                    <p className="caption font-semibold text-teal-800 dark:text-teal-200 [text-shadow:_0_1px_2px_rgba(0,0,0,0.18)] dark:[text-shadow:_0_1px_2px_rgba(0,0,0,0.45)]">
                         <ShinyText text={kicker} speed={6}/>
                     </p>
                     <h1 className="display text-2xl sm:text-3xl text-ink-900 dark:text-ink-100 truncate">
