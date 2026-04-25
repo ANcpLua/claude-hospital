@@ -352,11 +352,11 @@ export function PreVisit() {
                 fallbackAfterError(e instanceof Error ? e.message : String(e));
             }
 
-            function fallbackAfterError(reason: string) {
+            function fallbackAfterError(_reason: string) {
                 const errMsg: ChatMessage = {
                     id: nextMessages.length,
                     from: "ai",
-                    text: `(LLM error · ${reason} — switching to fallback)`,
+                    text: "(Live AI is busy right now — replaying a saved demo transcript so you can see the flow.)",
                 };
                 setMessages([...nextMessages, errMsg]);
                 setStatus({state: "fallback", cursor: nextMessages.length});
