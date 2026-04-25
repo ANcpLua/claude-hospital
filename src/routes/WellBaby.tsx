@@ -4,6 +4,7 @@ import {type Profile, PROFILE_LABELS, SCREENINGS,} from "../lib/screening";
 import {callLLM} from "../lib/llm";
 import {NARRATIVE_SYSTEM, type NarrativeSections, parseNarrative} from "../lib/narrative";
 import {DashboardHeader} from "../components/DashboardHeader";
+import AuroraBlur from "../components/react-bits/aurora-blur";
 
 interface Baby {
     readonly babyFirstName: string;
@@ -84,6 +85,7 @@ export function WellBaby() {
     const [b, setB] = useState<Baby>(DEFAULTS);
     const [narrative, setNarrative] = useState<NarrativeState>({status: "default"});
     const [cache, setCache] = useState<Record<string, NarrativeSections>>(loadNarrativeCache);
+    const [justArrived, setJustArrived] = useState(false);
 
     const note = useMemo(() => generateNote(b, narrative), [b, narrative]);
     const outOfRange = b.gestationalWeeks < 32 || b.gestationalWeeks > 42;
@@ -98,6 +100,13 @@ export function WellBaby() {
             );
         }
     }, [b, cache]);
+
+    useEffect(() => {
+        if (narrative.status !== "ready") return;
+        setJustArrived(true);
+        const t = setTimeout(() => setJustArrived(false), 1400);
+        return () => clearTimeout(t);
+    }, [narrative]);
 
     async function generateNarrative() {
         const key = hashInput(b);
@@ -207,6 +216,25 @@ export function WellBaby() {
                         shiny: b.spo2 >= 95
                     },
                 ]}
+                backdrop={
+                    <AuroraBlur
+                        width="100%"
+                        height="100%"
+                        speed={0.4}
+                        opacity={0.45}
+                        bloomIntensity={1.4}
+                        saturation={0.85}
+                        layers={[
+                            {color: "#fbcfe8", speed: 0.3, intensity: 0.55},
+                            {color: "#a5f3fc", speed: 0.5, intensity: 0.5},
+                            {color: "#fde68a", speed: 0.4, intensity: 0.4},
+                        ]}
+                        skyLayers={[
+                            {color: "#0b1220", blend: 1},
+                            {color: "#1e1b4b", blend: 0.6},
+                        ]}
+                    />
+                }
             />
 
             {outOfRange && (
@@ -384,7 +412,11 @@ export function WellBaby() {
                 </form>
 
                 <article
-                    className="rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 p-5 font-serif text-sm text-ink-800 dark:text-ink-100 whitespace-pre-wrap leading-relaxed">
+                    className={`rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 p-5 font-serif text-sm text-ink-800 dark:text-ink-100 whitespace-pre-wrap leading-relaxed transition-shadow duration-700 ${
+                        justArrived
+                            ? "shadow-[0_0_0_3px_rgba(45,212,191,0.5),0_0_24px_4px_rgba(45,212,191,0.35)]"
+                            : ""
+                    }`}>
                     {note}
                 </article>
             </div>

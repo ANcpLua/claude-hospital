@@ -103,6 +103,15 @@ registry-sourced. License key lives in `REACTBITS_LICENSE_KEY` env at
 - Comments that restate well-named code.
 - Feature flags for a single-session change.
 
+## Screenshots
+
+All Playwright / verification screenshots go in `screenshots/`
+(gitignored). Filename format: `<route>-<YYYYMMDD-HHMMSS>.png`, e.g.
+`wellbaby-20260425-160234.png`. Never write screenshots to the repo
+root or to a route directory — they pollute git status and have leaked
+into commits before. The `screenshots/` directory is the only allowed
+sink; treat anything outside it as a mistake to clean up.
+
 ## Gotchas
 
 - **Gemini quota by model.** `gemini-3-flash-preview` has a low free-tier

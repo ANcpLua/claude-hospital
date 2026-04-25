@@ -21,3 +21,6 @@ test-results
 playwright-report
 blob-report
 .playwright-mcp
+
+# Local screenshots — see CLAUDE.md "Screenshots" section
+screenshots/

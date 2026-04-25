@@ -5,6 +5,7 @@ import {callLLM} from "../lib/llm";
 import {TrendChart} from "../components/TrendChart";
 import {type AustriaHospital, AustriaMap} from "../components/AustriaMap";
 import {CountUp} from "../components/react-bits/count-up";
+import HalftoneWave from "../components/react-bits/halftone-wave";
 
 type Persona = "gen-z" | "pulmonologist" | "public-health";
 
@@ -647,11 +648,34 @@ function PublicHealth({
                 </p>
             </div>
 
-            <AustriaMap
-                hospitals={adjusted}
-                onSelect={(h) => setSelected(h.name)}
-                selectedName={selected ?? undefined}
-            />
+            <div className="relative overflow-hidden rounded-lg">
+                <div
+                    className="hidden dark:block absolute inset-0 pointer-events-none opacity-30"
+                    aria-hidden="true"
+                >
+                    <HalftoneWave
+                        width="100%"
+                        height="100%"
+                        speed={0.25}
+                        gridDensity={48}
+                        dotSize={0.42}
+                        softness={0.55}
+                        scrollX={0.05}
+                        scrollY={0.02}
+                        colorA={worstCount >= 3 ? "#fb923c" : "#5eead4"}
+                        colorB={worstCount >= 3 ? "#ef4444" : "#22d3ee"}
+                        backgroundColor="#0b1220"
+                        opacity={0.6}
+                    />
+                </div>
+                <div className="relative">
+                    <AustriaMap
+                        hospitals={adjusted}
+                        onSelect={(h) => setSelected(h.name)}
+                        selectedName={selected ?? undefined}
+                    />
+                </div>
+            </div>
 
             {selectedHospital && trend ? (
                 <div

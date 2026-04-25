@@ -23,6 +23,8 @@ export interface DashboardHeaderProps {
     /** Extra content slotted between title and metrics (e.g. tab switcher). */
     readonly right?: React.ReactNode;
     readonly className?: string;
+    /** Decorative layer rendered absolutely behind the header content. */
+    readonly backdrop?: React.ReactNode;
 }
 
 const TONE_TEXT: Record<NonNullable<DashboardMetric["tone"]>, string> = {
@@ -40,15 +42,21 @@ export function DashboardHeader({
                                     metrics,
                                     right,
                                     className,
+                                    backdrop,
                                 }: DashboardHeaderProps) {
     return (
         <header
             className={cn(
-                "rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 overflow-hidden",
+                "relative rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-900 overflow-hidden",
                 className,
             )}
         >
-            <div className="grid gap-4 p-5 sm:p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+            {backdrop && (
+                <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+                    {backdrop}
+                </div>
+            )}
+            <div className="relative grid gap-4 p-5 sm:p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                 <div className="space-y-2 min-w-0">
                     <p className="caption text-teal-700 dark:text-teal-400">
                         <ShinyText text={kicker} speed={6}/>
