@@ -2,10 +2,32 @@ import {expect, test} from "@playwright/test";
 
 // Happy path: the WellBaby route should generate an LLM narrative on click,
 // and clicking Regenerate must produce a fresh response (cache bypass).
-// Run against prod with `PROD=1 npm run test:e2e`, or locally after starting
-// `bun --env-file=.env server/index.ts` + `npm run dev`.
+// /api/gemini/generate is stubbed at the Playwright network boundary so the
+// test runs without a Gemini key.
 
 test("well-baby: generate then regenerate produces non-template narratives", async ({page}) => {
+    await page.route("**/api/gemini/generate", async (route) => {
+        // Tiny delay so React 19 doesn't batch the loading→ready transition into
+        // a single render — the test asserts the "Drafting…" label is visible.
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+                candidates: [{
+                    content: {
+                        parts: [{
+                            text: JSON.stringify({
+                                assessment: "Term AGA newborn delivered via SVD with Apgars 9/9 and unremarkable adaptation. Exam reveals a vigorous, well-perfused neonate with appropriate tone, normal respiratory effort, and no dysmorphic features identified on initial nursery assessment.",
+                                plan: "Routine nursery care: vitamin K IM and erythromycin eye prophylaxis, hepatitis B vaccine prior to discharge. Continue ad-lib breastfeeding with lactation support. Monitor weight, voids, and stools daily. Standard newborn metabolic and hearing screens before discharge.",
+                            }),
+                        }],
+                    },
+                }],
+            }),
+        });
+    });
+
     await page.goto("/#/well-baby");
 
     // Clear any prior cached narrative so the first click always hits the LLM.
