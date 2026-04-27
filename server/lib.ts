@@ -3,7 +3,7 @@ export interface RateLimit {
     readonly windowMs: number;
 }
 
-// Mutates log: drops expired timestamps, appends now on accept. Returns true if accepted.
+// sliding window; mutates log
 export function checkRate(
     log: Map<string, number[]>,
     key: string,
@@ -44,7 +44,7 @@ export function todayUtc(now: Date): string {
     return now.toISOString().slice(0, 10);
 }
 
-// Resets on UTC day rollover. Mutates state. Returns true if accepted.
+// resets at UTC midnight
 export function checkDaily(state: DailyState, cap: number, now: Date): boolean {
     const t = todayUtc(now);
     if (t !== state.day) {
@@ -76,8 +76,8 @@ export interface RetryOutcome extends AttemptResult {
     readonly attempts: number;
 }
 
-// 2xx returns; 429/5xx backs off baseMs*2^(n-1)+jitter and retries; other 4xx returns;
-// thrown errors count as failed attempts. After exhaustion, last result (503 if all threw).
+// retries 429/5xx with exponential backoff + jitter. throws count as failed attempts.
+// returns whatever the last attempt got, or 503 if every attempt blew up.
 export async function callWithRetry(
     attempt: () => Promise<AttemptResult>,
     cfg: RetryConfig,
@@ -96,7 +96,7 @@ export async function callWithRetry(
                 log?.("warn", `non-retryable ${r.status}`);
                 return {...r, attempts: n};
             }
-            log?.("warn", `attempt ${n}/${cfg.maxAttempts} got ${r.status} — backing off`);
+            log?.("warn", `attempt ${n}/${cfg.maxAttempts} got ${r.status}, backing off`);
         } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
             last = {status: 0, body: JSON.stringify({error: {message: msg}})};
@@ -108,6 +108,6 @@ export async function callWithRetry(
             await cfg.sleep(backoff + jitter);
         }
     }
-    log?.("error", `EXHAUSTED ${cfg.maxAttempts} attempts — last status=${last.status}`);
+    log?.("error", `EXHAUSTED ${cfg.maxAttempts} attempts, last status=${last.status}`);
     return {status: last.status || 503, body: last.body, attempts: cfg.maxAttempts};
 }

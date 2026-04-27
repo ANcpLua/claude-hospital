@@ -61,7 +61,7 @@ const ALLOWED_ORIGINS = new Set<string>(csv("ALLOWED_ORIGINS", DEFAULT_ORIGINS))
 const PROXY_READY = GEMINI_KEY.length > 0;
 if (!PROXY_READY) {
     console.warn(
-        `[proxy] DEGRADED — missing GEMINI_KEY. Static site serves; /api/gemini/generate returns 503.`,
+        `[proxy] DEGRADED: missing GEMINI_KEY. Static site serves; /api/gemini/generate returns 503.`,
     );
 }
 
