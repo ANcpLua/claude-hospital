@@ -16,7 +16,7 @@ proxy on Fly.io.
 | `/`           | Home grid                             | —                  |
 | `/well-baby`  | Well-baby note generator              | Walker · 12:13     |
 | `/postpartum` | 25-note analyzer (Sarah Connor)       | Walker · 15:00     |
-| `/inhaler`    | Dude, Where's My Inhaler — 3 personas | Walker · 17:30     |
+| `/inhaler`    | Dude, Where's My Inhaler (3 personas) | Walker · 17:30     |
 | `/previsit`   | PreVisit intake conversation          | Nedoszytko · 25:00 |
 | `/medduties`  | On-call shift scheduler               | Nedoszytko · 28:30 |
 | `/postvisit`  | PostVisit patient companion           | Nedoszytko · 34:00 |
@@ -32,9 +32,11 @@ npm run build
 npm run lint         # tsc --noEmit
 ```
 
-For full LLM behavior set `GEMINI_KEY` and `TURNSTILE_SECRET` in `.env`.
-Without them the proxy returns 503 and every route falls back to its
-deterministic path.
+For full LLM behavior set `GEMINI_KEY` in `.env`. Without it the proxy
+returns 503 and every route falls back to its deterministic path.
+
+(Turnstile got dropped after the first week. Keeping the env around for
+when bots find the demo, which they haven't yet.)
 
 ## Deploy
 
@@ -49,15 +51,14 @@ VM with 256 MB. ~1 s cold start after idle.
 ## Architecture
 
 One Bun container serves the static `dist/` and a `/api/gemini/generate`
-proxy. The browser posts a Cloudflare Turnstile token + the prompt; the
-proxy verifies the token, applies a per-IP sliding window + global daily
-cap, and forwards to Google. Shared `GEMINI_KEY` lives only as a Fly
-secret. The single user-supplied key is OpenWeather (Inhaler AQI), kept
-in `localStorage`.
+proxy. The browser posts a prompt; the proxy applies a per-IP sliding
+window plus a global daily cap, then forwards to Google. The shared
+`GEMINI_KEY` lives only as a Fly secret. The single user-supplied key is
+OpenWeather (for the Inhaler AQI feed), kept in `localStorage`.
 
 Per-route caching by `(route, input-hash)` means a repeat click is a
-cache hit, never a re-call. No LLM call fires on mount or tab switch.
+cache hit. No LLM call fires on mount or tab switch.
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+MIT. See [`LICENSE`](LICENSE).

@@ -1,8 +1,8 @@
 # PRD — Six Demos · Claude Code in Healthcare
 
-- **Status:** shipped
+- **Status:** shipped (mostly; see §10 for the bits I'd redo)
 - **Author:** alex_nachtmann@yahoo.com
-- **Last update:** 2026-04-24
+- **Last touched:** 2026-04-27
 - **Live:** https://claude-hospital.fly.dev
 - **Repo:** `github.com/ANcpLua/claude-hospital` (private)
 
@@ -11,23 +11,23 @@
 Anthropic on-demand webinar *Claude Code in Healthcare: How Physicians
 Build with AI* (2026-04-23, 1 h 01 m). Hosts:
 
-- Dr.Daisy Hollman — Claude Code team, Anthropic
-- Graham Walker, MD — emergency physician, MDCalc founder
-- Michał Nedoszytko, MD PhD — interventional cardiologist, PostVisit.ai
+- Dr. Daisy Hollman — Claude Code team, Anthropic
+- Graham Walker, MD (emergency physician, MDCalc founder)
+- Michał Nedoszytko, MD PhD (interventional cardiologist, PostVisit.ai)
 
 Graham framed his three as "simple examples to lower activation energy,
-not polished products." Michał framed his three as existing or
-hackathon-shipped systems.
+not polished products." Michał's three are existing or hackathon-shipped
+systems.
 
 ## 2. Why this exists
 
 A single-screen, interactive reconstruction of the six demos. Clean-room
 React/TS, no PHI. The backend is a single-purpose Bun proxy that fronts
-the shared Gemini key — no database, no auth, no user state on the
-server. Reference implementation + scaffolding target; each demo is a
-separable module.
+the shared Gemini key. No database, no auth, no user state on the
+server. Each demo is a separable module so the repo doubles as
+scaffolding for the next one.
 
-No institutional affiliation. No named patients. No commercial intent.
+No institutional affiliation. No named patients. Nothing commercial.
 
 ## 3. Routes
 
@@ -36,7 +36,7 @@ No institutional affiliation. No named patients. No commercial intent.
 | — | `/`           | Home grid                               | —      | —       |
 | 1 | `/well-baby`  | Well-baby note generator                | Graham | 12:13   |
 | 2 | `/postpartum` | 25-note analyzer (Sarah Connor)         | Graham | 15:00   |
-| 3 | `/inhaler`    | Dude Where's My Inhaler — 3 personas    | Graham | 17:30   |
+| 3 | `/inhaler`    | Dude Where's My Inhaler (3 personas)    | Graham | 17:30   |
 | 4 | `/previsit`   | Conversational pre-visit intake         | Michał | 25:00   |
 | 5 | `/medduties`  | On-call shift scheduler                 | Michał | 28:30   |
 | 6 | `/postvisit`  | Post-visit patient companion            | Michał | 34:00   |
@@ -44,13 +44,13 @@ No institutional affiliation. No named patients. No commercial intent.
 
 ## 4. Non-goals
 
-- **No EHR integration.** FHIR read may appear as paste-in JSON
-  (PostVisit) but never as a project-wide concern.
-- **No compliance certification.** HIPAA / GDPR / EU AI Act conformance
-  is out of scope; synthetic data only.
-- **No authentication.** No accounts, no multi-tenancy.
-- **No mobile-native app.** Responsive web only.
-- **No analytics / tracking.** Zero third-party scripts.
+- **No EHR integration.** FHIR read shows up as paste-in JSON in
+  PostVisit; that's the whole story.
+- **No compliance certification.** HIPAA, GDPR, EU AI Act — none of it.
+  Synthetic data only.
+- No authentication. No accounts, no multi-tenancy.
+- No mobile-native app; responsive web only.
+- Zero analytics, zero third-party scripts.
 
 ## 5. Architecture
 
@@ -60,7 +60,7 @@ No institutional affiliation. No named patients. No commercial intent.
 │  react-router-dom 7 · HashRouter · lucide-react      │
 │  ReactBits starter (shadcn registry)                 │
 ├──────────────────────────────────────────────────────┤
-│  Static SPA — nothing renders server-side.           │
+│  Static SPA. Nothing renders server-side.            │
 │  Persistence: IndexedDB (chat, scribe, guidelines)   │
 │                 + localStorage (OpenWeather key,     │
 │                 theme, wishes, per-route caches)     │
@@ -68,8 +68,8 @@ No institutional affiliation. No named patients. No commercial intent.
 │        → Google Gemini; shared key held server-side. │
 │        Client entry: src/lib/llm.ts (callLLM,        │
 │        callLLMStream, useLlmAvailable).              │
-│  Bot check: Cloudflare Turnstile token on every      │
-│        proxy call (src/lib/turnstile.ts).            │
+│  Bot check: dropped after the first week (see §10);  │
+│        rate-limit + daily-cap carry the load now.    │
 │  Speech: Web Speech API via src/lib/speech.ts        │
 │  Charts: inline SVG (components/TrendChart.tsx)      │
 ├──────────────────────────────────────────────────────┤
@@ -81,27 +81,27 @@ No institutional affiliation. No named patients. No commercial intent.
 
 Every demo is a single route file in `src/routes/`, backed by:
 
-- `src/lib/` — shared helpers (llm, speech, cache, scheduler, etc.)
-- `src/data/` — synthetic datasets
-- `src/components/` — shared UI, plus `react-bits/` from the starter
-  registry.
+- `src/lib/` for shared helpers (llm, speech, cache, scheduler, …)
+- `src/data/` for the synthetic datasets
+- `src/components/` for shared UI, plus `react-bits/` from the starter
+  registry. Don't edit anything inside `react-bits/`.
 
 **Invariants:**
 
-1. **Deterministic numbers, LLM prose.** The LLM never fabricates a
-   vital, lab, dose, or shift. Numbers come from structured input or a
-   TS solver; the LLM only writes narrative.
+1. **The LLM writes prose, the code owns the numbers.** Vitals, labs,
+   doses, shifts come from structured input or a TS solver. The LLM
+   only fills in the narrative around them.
 2. **Graceful fallback.** Every demo ships a deterministic path that
    works without LLM output. If the proxy fails (rate-limit, daily
-   cap, provider error, Turnstile), the UI shows an honest error —
-   never a fabricated clinical answer.
-3. **No LLM on mount.** Every LLM call is behind an explicit user click
-   and is cached per `(route, input-hash)`.
-4. **No PHI over the wire.** Speech stays on-device via Web Speech API;
-   only the post-transcription text goes to Gemini via the proxy.
-5. **Shared key, not BYOK for Gemini.** Gemini credentials live as Fly
-   secrets and never ship in the client bundle. OpenWeather is the
-   only user-supplied key, and only for the Inhaler AQI feed.
+   cap, provider error), the UI surfaces a real error message instead
+   of inventing a clinical answer.
+3. **No LLM on mount.** Every call is behind an explicit user click,
+   cached per `(route, input-hash)`.
+4. **No PHI over the wire.** Speech stays on-device via Web Speech API.
+   Only the post-transcription text goes to Gemini via the proxy.
+5. **Shared Gemini key.** It lives as a Fly secret and never ships in
+   the bundle. OpenWeather is the one user-supplied key, and only the
+   Inhaler route uses it.
 
 ## 6. Visual flavor
 
@@ -119,56 +119,90 @@ Every demo is a single route file in `src/routes/`, backed by:
 ## 7. LLM contract
 
 Shared server-side Gemini key, proxied through the Bun server. Clients
-post to `/api/gemini/generate`; the proxy verifies a Cloudflare
-Turnstile token, applies a per-IP sliding window and a global daily
-cap, then forwards to Google.
+post to `/api/gemini/generate`. The proxy applies a per-IP sliding
+window plus a global daily cap, then forwards to Google.
 
-- **Model pin:** `GEMINI_MODEL = "gemini-flash-latest"` in
-  `server/index.ts`. This is an alias — Google rotates what it
-  resolves to (today: `gemini-3-flash-preview`). Bump the constant if
-  answer quality or rate limits shift unexpectedly.
-- **Secrets:** `GEMINI_KEY` and `TURNSTILE_SECRET` as Fly secrets;
-  never inlined into the bundle, never shipped as `VITE_*`. The
-  Turnstile *site* key (`VITE_TURNSTILE_SITE_KEY`) is public and may
-  ship in the client.
-- **Rate limits:** per-IP 30 requests/hour sliding window; global
-  `DAILY_CAP` (default 1200/day). Overrun returns
+- **Model pin:** `GEMINI_MODEL = "gemini-3-flash-preview"` in
+  `server/index.ts`. Bump the constant if answer quality or rate limits
+  shift. We pin a specific preview rather than `*-latest` because the
+  free-tier quota for `gemini-3-flash-preview` is much tighter than the
+  alias suggests; surprised me once, see Gotchas in `CLAUDE.md`.
+- **Secrets:** `GEMINI_KEY` as a Fly secret, never inlined.
+- **Rate limits:** per-IP `IP_LIMIT` (default 200) per `IP_WINDOW_MINUTES`
+  (default 60). Global `DAILY_CAP` (default 1200/day). Overrun returns
   `{error: "rate-limit" | "daily-cap"}` with HTTP 429.
-- **Degraded mode:** if `GEMINI_KEY` or `TURNSTILE_SECRET` is missing
-  at startup, the static site still serves and `/api/gemini/generate`
-  returns HTTP 503 — no crash loop.
+- **Degraded mode:** if `GEMINI_KEY` is missing at startup, the static
+  site still serves and `/api/gemini/generate` returns HTTP 503. No
+  crash loop, just a 503.
 
-Client entry (`src/lib/llm.ts`) exports: `callLLM`, `callLLMStream`,
-`useLlmAvailable`, plus the `Message`, `CallOpts`, and `Result` types.
-There is no client-side Gemini BYOK. The legacy
-`localStorage["meduni-byok"]` entry is cleaned up on Settings mount.
+Client entry: `src/lib/llm.ts` exports `callLLM`, `callLLMStream`, plus
+the `Message`, `CallOpts`, and `Result` types. There is no client-side
+Gemini BYOK. The legacy `localStorage["meduni-byok"]` entry is cleaned
+up on Settings mount (kept for users who saved a key during the brief
+week BYOK was supported).
 
-The one remaining user-supplied key is OpenWeather, managed at
-`/settings` via `src/lib/aqi.ts` (`getOpenWeatherKey`,
-`setOpenWeatherKey`). It powers only the Inhaler route's live AQI
-feed; every other demo runs on shared credentials.
+OpenWeather is the one remaining user-supplied key, managed at
+`/settings` via `src/lib/aqi.ts`. Inhaler uses it; nothing else does.
 
 ## 8. Deployment
 
 - Fly.io, app `claude-hospital`, region `fra`, auto-stop enabled.
 - `fly.toml` + `Dockerfile`: multi-stage `node:20-alpine` build of the
   Vite bundle → `oven/bun:1-slim` runtime running
-  `bun server/index.ts`. One container serves both the static bundle
-  and `/api/gemini/generate`.
-- One-time: `fly secrets set GEMINI_KEY=… TURNSTILE_SECRET=…`.
+  `bun server/index.ts`. One container, both jobs.
+- One-time: `fly secrets set GEMINI_KEY=…`.
 - Deploy: `fly deploy` from repo root.
 
 ## 9. Definition of done
 
-- All seven routes load; no horizontal scroll at 375 px.
-- Proxy healthy: Postpartum streams two cited summaries; PreVisit chats
-  through intake; MedDuties parses natural-language intents; PostVisit
-  answers per-recommendation questions; Inhaler composes cohort SMS
+- All seven routes load. No horizontal scroll at 375 px.
+- Proxy healthy: Postpartum streams two cited summaries, PreVisit chats
+  through intake, MedDuties parses natural-language intents, PostVisit
+  answers per-recommendation questions, Inhaler composes cohort SMS
   drafts.
-- Proxy degraded (rate-limit / daily-cap / provider error / Turnstile):
-  every demo surfaces a human-readable error and falls back to its
-  deterministic path. No fabricated clinical content on failure.
+- Proxy degraded (rate-limit, daily-cap, provider error): every demo
+  surfaces a human-readable error and falls back to its deterministic
+  path. Never a fabricated clinical answer on failure.
 - Inhaler AQI: without an OpenWeather key, reference sites render from
-  synthetic data; with a key, live per-site AQI appears inline.
+  synthetic data. With a key, live per-site AQI appears inline.
 - `npm run lint` and `npm run build` zero-error.
-- `fly deploy` produces a working URL within 2 minutes.
+- `fly deploy` produces a working URL within ~2 minutes.
+
+## 10. What I'd change if I had another weekend
+
+- **Postpartum streaming.** Currently we accumulate into one buffer
+  and re-render on every chunk. It works, but the source-citation
+  parser runs only on the final string, so chips pop in at the end
+  rather than as they're written. Streaming-aware parser would be
+  nicer.
+- **PreVisit fallback transcript.** The hard-coded fallback script
+  (FALLBACK_SCRIPT in `PreVisit.tsx`) is sturdy but mechanical. A real
+  fallback would replay the last successful session for that patient.
+- **MedDuties solver.** Greedy with a swap-based balancer. Fine at
+  N=4 docs, would be embarrassing at N=20. A proper ILP or constraint
+  solver belongs here, but solo-dev YAGNI.
+- **Mobile QA.** Verified at 375×812 in DevTools. Real device testing
+  is sparse and I know it.
+
+## 11. Stuff that bit me
+
+Turnstile got pulled after a week. The widget choked on Safari ITP at
+launch and kept the proxy alive on Chrome only, which is the opposite
+of what bot-protection should do. Rate-limit + daily-cap was good
+enough on its own and the bots haven't found the demo anyway.
+
+Gemini 3's thinking-budget defaults to "on" and silently eats output
+tokens. For clinical templates this means the response runs out before
+the visible text starts. Disabled in `server/index.ts` via
+`thinkingConfig: {thinkingBudget: 0}`. Cost me an afternoon.
+
+R3F's `<Canvas>` inlines `position: relative` on its host div, which
+breaks `BlackHole`'s own `children` slot. The PreVisit header overlays
+its title as a sibling of `<Suspense>`, not as a `<Canvas>` child.
+
+## 12. TODO (probably never)
+
+- Print stylesheet for the PostVisit summary. The `.print-a4` class
+  exists in `index.css` but only one component uses it.
+- Per-demo "open in webinar at this timestamp" deep-link.
+- A second OpenWeather provider as fallback.

@@ -1,6 +1,6 @@
 import {expect, test} from "@playwright/test";
 
-// Web Speech API isn't available in headless Chromium — smoke-test only.
+// Web Speech API isn't available in headless Chromium. Smoke-test only.
 test("postvisit: route renders without errors", async ({page}) => {
     await page.goto("/#/postvisit");
 

@@ -27,7 +27,7 @@ function setTheme(t: Theme): void {
     try {
         localStorage.setItem(KEY, t);
     } catch {
-        /* disabled storage — UI still updates below */
+        /* disabled storage; UI still updates below */
     }
     applyTheme(t);
     window.dispatchEvent(new CustomEvent("meduni-theme", {detail: t}));

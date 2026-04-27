@@ -74,8 +74,8 @@ const TOOLS: ReadonlyArray<Tool> = [
 export function Home() {
     return (
         <div className="space-y-10">
-            {/* Landing-page only — mounted here (not in Layout) so it unmounts
-          the moment the user navigates to any other route. */}
+            {/* Landing-page only. Mounted here (not in Layout) so it unmounts
+          the moment the user navigates away. */}
             <SplashCursor
                 DENSITY_DISSIPATION={1.5}
                 VELOCITY_DISSIPATION={4}

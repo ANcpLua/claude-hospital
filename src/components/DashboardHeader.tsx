@@ -11,7 +11,7 @@ export interface DashboardMetric {
     readonly decimals?: number;
     readonly tone?: "default" | "teal" | "amber" | "emerald" | "rose";
     readonly icon?: LucideIcon;
-    /** Shimmer the value. Use sparingly — one per header at most. */
+    /** Shimmer the value. Use sparingly (one per header at most). */
     readonly shiny?: boolean;
 }
 

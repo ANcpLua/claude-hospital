@@ -5,7 +5,7 @@
 SPA that rebuilds the six demos from the Anthropic *Claude Code in
 Healthcare* webinar (Graham Walker, MD + Michał Nedoszytko, MD PhD,
 2026-04-23). Synthetic data, no PHI, no tracking. Deployed to Fly.io
-as a Bun image in Frankfurt — Bun (`server/index.ts`) serves the Vite
+as a Bun image in Frankfurt. Bun (`server/index.ts`) serves the Vite
 bundle out of `./dist` and fronts a thin proxy at `/api/gemini/generate`
 that holds the shared Gemini key server-side.
 
@@ -13,20 +13,20 @@ Live: https://claude-hospital.fly.dev
 
 ## Architecture
 
-- **Client** — static Vite bundle in `dist/`, served by Bun. No bot-check
-  widget; the proxy's rate-limit + daily-cap are sufficient for a demo.
-- **Proxy** — `server/index.ts` (Bun): origin allowlist → owner-IP fast
+- **Client:** static Vite bundle in `dist/`, served by Bun. No bot-check
+  widget; the proxy's rate-limit + daily-cap are enough for a demo.
+- **Proxy** — `server/index.ts` (Bun). Origin allowlist → owner-IP fast
   path OR per-IP sliding window → global daily cap → retried fetch to
   Gemini. Single pinned model (`GEMINI_MODEL`), no silent fallback. On
   `429`/`5xx` from Gemini we retry `RETRY_MAX` times with exponential
   backoff + jitter, then return a structured `503` with
   `{error:"upstream-overloaded", attempts, model, detail}` so the
   client can surface a clear message.
-- **Anti-abuse stack (4 layers, no third-party dependency):** origin
-  allowlist · per-IP sliding window · global daily cap · server-held
-  `GEMINI_KEY`. Worst-case daily burn at Flash-3 Preview prices: ~$1
-  if the cap is fully exhausted at 1k tokens in / 500 out per call.
-- **Secret** — `GEMINI_KEY` lives as a Fly secret in prod and in
+- **Anti-abuse:** four layers, zero third-party deps. Origin allowlist,
+  per-IP sliding window, global daily cap, server-held `GEMINI_KEY`.
+  Worst-case daily burn at Flash-3 Preview prices is roughly $1 if the
+  cap is fully exhausted at 1k tokens in / 500 out per call.
+- **Secret:** `GEMINI_KEY` lives as a Fly secret in prod and in
   `.env` (gitignored) locally. Never inlined into the bundle.
 
 ## Env vars (all optional unless flagged)
@@ -35,7 +35,7 @@ Live: https://claude-hospital.fly.dev
 |------------------------|-----------------------------|--------------------------------------------------|
 | `GEMINI_KEY`           | —                           | **Required.** Server-side Google AI Studio key.  |
 | `GEMINI_MODEL`         | `gemini-3-flash-preview`    | Pinned. Override in `fly.toml`/`.env`.           |
-| `OWNER_IPS`            | (empty)                     | Comma list — IPs skipping per-IP cap.            |
+| `OWNER_IPS`            | (empty)                     | Comma list of IPs skipping per-IP cap.           |
 | `IP_LIMIT`             | `200`                       | Per-IP requests per window.                      |
 | `IP_WINDOW_MINUTES`    | `60`                        | Sliding window length.                           |
 | `DAILY_CAP`            | `1200`                      | Global daily ceiling (UTC).                      |
@@ -48,14 +48,14 @@ Live: https://claude-hospital.fly.dev
 
 - **Stack:** React 19, Vite 8, TypeScript 6 strict, Tailwind 4, Bun 1
   runtime. No `any`, no `@ts-ignore`, no null-forgiving `!`.
-- **Shared Gemini key via proxy.** The key must stay server-side — never
+- **Shared Gemini key via proxy.** The key stays server-side. Don't
   inline it into the bundle or ship it as a `VITE_*` var. New LLM calls
   go through `callLLM` / `callLLMStream` in `src/lib/llm.ts`.
-- **No LLM call on mount or tab switch.** Every call originates from an
-  explicit user click. Results cached per `(route, input-hash)` so a
-  repeat click is a cache hit.
-- **No PHI.** All datasets in `src/data` are synthetic.
-- **Mobile-first.** Every route must work at 375×812; A11y AA.
+- **No LLM call on mount or tab switch.** Every call originates from
+  an explicit user click, and results cache per `(route, input-hash)`,
+  so a repeat click is a cache hit.
+- **No PHI.** Synthetic data everywhere in `src/data`.
+- Mobile-first. Every route must work at 375×812; A11y AA.
 
 ## Routes
 
@@ -64,7 +64,7 @@ Live: https://claude-hospital.fly.dev
 | `/`           | Home grid                            | —      | —         |
 | `/well-baby`  | Well-baby note generator             | Graham | 12:13     |
 | `/postpartum` | 25-note analyzer (Sarah Connor)      | Graham | 15:00     |
-| `/inhaler`    | Dude Where's My Inhaler — 3 personas | Graham | 17:30     |
+| `/inhaler`    | Dude Where's My Inhaler (3 personas) | Graham | 17:30     |
 | `/previsit`   | PreVisit intake conversation         | Michał | 25:00     |
 | `/medduties`  | On-call scheduler                    | Michał | 28:30     |
 | `/postvisit`  | PostVisit patient companion          | Michał | 34:00     |
@@ -73,8 +73,8 @@ Live: https://claude-hospital.fly.dev
 ## ReactBits components
 
 Installed from the starter tier via shadcn CLI in
-`src/components/react-bits/`. Do not modify these files — they are
-registry-sourced. License key lives in `REACTBITS_LICENSE_KEY` env at
+`src/components/react-bits/`. Don't modify them; they're registry-sourced.
+License key lives in `REACTBITS_LICENSE_KEY` at
 /Users/ancplua/framework/claude-hospital/.env. Current set: `animated-list`, `count-up`, `custom-cursor`,
 `glitch-text`, `glitter-warp`, `shiny-text`, `text-scatter`.
 
@@ -108,9 +108,9 @@ registry-sourced. License key lives in `REACTBITS_LICENSE_KEY` env at
 All Playwright / verification screenshots go in `screenshots/`
 (gitignored). Filename format: `<route>-<YYYYMMDD-HHMMSS>.png`, e.g.
 `wellbaby-20260425-160234.png`. Never write screenshots to the repo
-root or to a route directory — they pollute git status and have leaked
+root or to a route directory; they pollute git status and have leaked
 into commits before. The `screenshots/` directory is the only allowed
-sink; treat anything outside it as a mistake to clean up.
+sink. Anything outside it is a mistake to clean up.
 
 ## Gotchas
 
@@ -119,5 +119,6 @@ sink; treat anything outside it as a mistake to clean up.
   more generous. If `npm run test:e2e:prod` (or the CI e2e job) returns
   `RESOURCE_EXHAUSTED` 429s, check
   https://console.cloud.google.com/billing for the project that owns
-  `GEMINI_KEY` — Tier 1 limits apply only once billing is actually
-  attached, regardless of the key's display name.
+  `GEMINI_KEY`. Tier 1 limits apply only once billing is actually
+  attached, regardless of the key's display name. Lost half a day to
+  this once.

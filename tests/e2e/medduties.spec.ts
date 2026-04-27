@@ -1,6 +1,6 @@
 import {expect, test} from "@playwright/test";
 
-// Schedule generation is deterministic — LLM is opt-in via natural-language commands.
+// Schedule generation is deterministic. LLM is opt-in via natural-language commands.
 test("medduties: generate schedule produces assignments without errors", async ({page}) => {
     await page.goto("/#/medduties");
 

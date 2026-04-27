@@ -34,7 +34,7 @@ test("well-baby: generate then regenerate produces non-template narratives", asy
     await expect(generate).toBeVisible();
     await generate.click();
 
-    // Content-based wait — more robust than racing the transient "Drafting…" label.
+    // Content-based wait. More robust than racing the transient "Drafting…" label.
     const article = page.locator("article");
     await expect(article).toContainText("FIRST-CALL", {timeout: 30_000});
     const first = (await article.textContent()) ?? "";

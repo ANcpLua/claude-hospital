@@ -1,6 +1,6 @@
 import {expect, test} from "@playwright/test";
 
-// Multi-turn intake is hard to drive headlessly — smoke-test only.
+// Multi-turn intake is hard to drive headlessly. Smoke-test only.
 test("previsit: intake UI renders without errors", async ({page}) => {
     await page.goto("/#/previsit");
 
