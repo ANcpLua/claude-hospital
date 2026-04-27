@@ -1,8 +1,6 @@
 import {defineConfig, devices} from "@playwright/test";
 
-// E2E target: production by default (PROD=1) or local dev (PROD unset).
-// Local mode boots `bun --env-file=.env server/index.ts` + `npm run dev`
-// out of band — see CLAUDE.md Execution protocol.
+// PROD=1 targets fly.dev; otherwise local dev (bun + vite booted out of band).
 const PROD = process.env.PROD === "1";
 const BASE_URL = PROD
     ? "https://claude-hospital.fly.dev"
@@ -24,8 +22,7 @@ export default defineConfig({
     projects: [
         {
             name: "mobile",
-            // Chromium-based mobile preset — keeps the 375x812 viewport without
-            // requiring a separate WebKit install.
+            // Chromium-based preset — 375x812 without a separate WebKit install.
             use: {...devices["Pixel 7"]},
         },
     ],

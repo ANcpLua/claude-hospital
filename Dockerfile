@@ -1,4 +1,4 @@
-# Build stage — Node for the proven Vite pipeline.
+# Build stage — Node for Vite.
 FROM node:20-alpine AS build
 WORKDIR /app
 
@@ -7,7 +7,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Runtime stage — Bun runs server/index.ts natively, serves dist/.
+# Runtime — Bun serves dist/ + server/index.ts natively.
 FROM oven/bun:1-slim
 WORKDIR /app
 

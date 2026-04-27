@@ -2,27 +2,17 @@
 app = "claude-hospital"
 
 [env]
-# All values read by server/index.ts via process.env with sensible defaults.
-# Override here without touching code; Fly secret carries GEMINI_KEY.
-
-# Model — Gemini 3 Flash preview. No silent fallback to a pricier model.
 GEMINI_MODEL = "gemini-3-flash-preview"
 
-# Per-IP sliding window. 200/60min absorbs a user bouncing across six demos.
 IP_LIMIT = "200"
 IP_WINDOW_MINUTES = "60"
-
-# Global daily cap (UTC). Hard ceiling against runaway bills.
 DAILY_CAP = "1200"
 
-# Retry policy on Gemini 429/5xx. Exponential: 400, 800, 1600 ms + jitter.
 RETRY_MAX = "3"
 RETRY_BASE_MS = "400"
 GEMINI_TIMEOUT_MS = "20000"
 
-# OWNER_IPS — comma list of IPs that bypass per-IP cap.
-# Empty in prod; set via `fly secrets set OWNER_IPS=…` if you ever want to
-# allowlist a static egress (e.g. office NAT).
+# OWNER_IPS bypasses per-IP cap; set via `fly secrets set OWNER_IPS=…` if needed.
 # OWNER_IPS = ""
 
 [http_service]

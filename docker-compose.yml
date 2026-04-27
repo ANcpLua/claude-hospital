@@ -1,6 +1,4 @@
-# One-command local prod-like run:  docker compose up --build
-# Reads secrets from .env (gitignored). Mirrors fly.toml so the image you
-# test here is the image Fly runs in Frankfurt.
+# Local prod-like run: `docker compose up --build`. Mirrors fly.toml.
 
 services:
   rheum-portal:
@@ -12,9 +10,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Required secret — fail-fast if missing in .env.
       GEMINI_KEY: ${GEMINI_KEY:?set GEMINI_KEY in .env}
-      # Tunables — defaults match server/index.ts.
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3-flash-preview}
       OWNER_IPS: ${OWNER_IPS:-}
       IP_LIMIT: ${IP_LIMIT:-200}

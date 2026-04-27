@@ -1,10 +1,6 @@
 import {expect, test} from "@playwright/test";
 
-// Happy path: the WellBaby route should generate an LLM narrative on click,
-// and clicking Regenerate must produce a fresh response (cache bypass).
-// /api/gemini/generate is stubbed at the Playwright network boundary so the
-// test runs without a Gemini key.
-
+// /api/gemini/generate is stubbed so the test runs without a Gemini key.
 test("well-baby: generate then regenerate produces non-template narratives", async ({page}) => {
     let callCount = 0;
     await page.route("**/api/gemini/generate", async (route) => {
@@ -38,17 +34,14 @@ test("well-baby: generate then regenerate produces non-template narratives", asy
     await expect(generate).toBeVisible();
     await generate.click();
 
-    // Wait for the first response to render. Content-based wait is more robust
-    // than racing the transient "Drafting…" label, especially in slow CI.
+    // Content-based wait — more robust than racing the transient "Drafting…" label.
     const article = page.locator("article");
     await expect(article).toContainText("FIRST-CALL", {timeout: 30_000});
     const first = (await article.textContent()) ?? "";
     expect(first).toMatch(/Assessment/);
-    // The deterministic template starts with this phrase. If we see it,
-    // the LLM call failed and we fell back to the template.
+    // Deterministic template signature — if seen, the LLM call fell back.
     expect(first).not.toMatch(/term \(AGA\) infant, svd\.\s+Uneventful transition\./);
 
-    // Regenerate must bypass the cache — second click hits the proxy again.
     await page.getByRole("button", {name: /regenerate narrative/i}).click();
     await expect(article).toContainText("SECOND-CALL", {timeout: 30_000});
     expect(callCount).toBe(2);

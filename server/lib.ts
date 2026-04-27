@@ -1,17 +1,9 @@
-// Pure logic extracted from index.ts so tests can exercise it without
-// booting Bun. Everything here is deterministic given inputs + injected
-// state — no module-level mutation, no env reads, no fetch.
-
 export interface RateLimit {
     readonly limit: number;
     readonly windowMs: number;
 }
 
-/**
- * Sliding-window rate-limit check.
- * Mutates `log` in place: removes expired timestamps, appends `now` on accept.
- * Returns true if accepted (under limit), false if rejected.
- */
+// Mutates log: drops expired timestamps, appends now on accept. Returns true if accepted.
 export function checkRate(
     log: Map<string, number[]>,
     key: string,
@@ -52,11 +44,7 @@ export function todayUtc(now: Date): string {
     return now.toISOString().slice(0, 10);
 }
 
-/**
- * Global daily counter. Resets count when day rolls over.
- * Returns true if accepted (under cap), false if rejected.
- * Mutates `state` in place.
- */
+// Resets on UTC day rollover. Mutates state. Returns true if accepted.
 export function checkDaily(state: DailyState, cap: number, now: Date): boolean {
     const t = todayUtc(now);
     if (t !== state.day) {
@@ -88,14 +76,8 @@ export interface RetryOutcome extends AttemptResult {
     readonly attempts: number;
 }
 
-/**
- * Generic retry-with-backoff over a single attempt function.
- * - 2xx: returns immediately.
- * - 429/5xx: backs off `baseMs * 2^(n-1) + jitter` and retries up to maxAttempts.
- * - Other 4xx: returns the response without retrying.
- * - Throws inside attempt: counts as a failed attempt; retried.
- * After exhausting attempts the last result (or 503 if all threw) is returned.
- */
+// 2xx returns; 429/5xx backs off baseMs*2^(n-1)+jitter and retries; other 4xx returns;
+// thrown errors count as failed attempts. After exhaustion, last result (503 if all threw).
 export async function callWithRetry(
     attempt: () => Promise<AttemptResult>,
     cfg: RetryConfig,

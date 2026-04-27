@@ -1,7 +1,3 @@
-// Validator for the Well-Baby narrative response.
-// Gemini is asked for a JSON object {assessment, plan}; this checks the shape
-// before we trust it. Pure function, no DOM, no React — testable from Node.
-
 export interface NarrativeSections {
     readonly assessment: string;
     readonly plan: string;

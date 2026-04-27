@@ -1,29 +1,5 @@
-// Rheum Portal — Bun proxy in front of Gemini.
-//
-// Serves the built Vite bundle from ./dist and exposes /api/gemini/generate.
-// Per request: origin allowlist → owner-IP fast-path OR per-IP sliding
-// window → daily cap (consumed only on accepted requests) → retried fetch
-// to Gemini with the server-held key.
-//
-// Anti-abuse stack (4 layers, no third-party dependency):
-//   1. Origin allowlist            — only ALLOWED_ORIGINS can call /api/*
-//   2. Per-IP sliding window       — IP_LIMIT / IP_WINDOW_MINUTES
-//   3. Global daily cap (UTC)      — DAILY_CAP
-//   4. Server-held GEMINI_KEY      — never leaves the container
-//
-// All tunables come from env so fly.toml / .env can drive behavior without code
-// changes:
-//   GEMINI_KEY              required — Fly secret
-//   GEMINI_MODEL            default gemini-3-flash-preview
-//   OWNER_IPS               comma list — IPs that skip rate-limit
-//   IP_LIMIT                default 200
-//   IP_WINDOW_MINUTES       default 60
-//   DAILY_CAP               default 1200
-//   RETRY_MAX               default 3
-//   RETRY_BASE_MS           default 400 (exponential: 400, 800, 1600 …)
-//   GEMINI_TIMEOUT_MS       default 20000
-//   ALLOWED_ORIGINS         comma list (defaults below)
-//   PORT                    default 8080
+// Bun proxy — serves Vite bundle, proxies /api/gemini/generate.
+// Rate-limited per IP, daily cap, server-held key. Config via env.
 
 import {
     type AttemptResult,
@@ -209,10 +185,7 @@ async function handleGenerate(req: Request): Promise<Response> {
         generationConfig: {
             maxOutputTokens: body.maxTokens ?? 1024,
             temperature: body.temperature ?? 0.2,
-            // Gemini 3 reasoning models default to thinking, which silently
-            // eats hundreds of output tokens before producing visible text.
-            // For clinical-template demos thinking is dead weight — disable it
-            // so maxOutputTokens maps 1:1 to visible content.
+            // Gemini 3 thinking eats output tokens silently — disable so maxOutputTokens maps 1:1 to visible text.
             thinkingConfig: {thinkingBudget: 0},
             ...(body.responseFormat === "json" ? {responseMimeType: "application/json"} : {}),
         },
