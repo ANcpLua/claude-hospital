@@ -1,5 +1,5 @@
 # Build stage — Node for Vite.
-FROM node:24-alpine@sha256:d1b3b4da11eefd5941e7f0b9cf17783fc99d9c6fc34884a665f40a06dbdfc94f AS build
+FROM node:24-alpine@sha256:fb71d01345f11b708a3553c66e7c74074f2d506400ea81973343d915cb64eef0 AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
