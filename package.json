@@ -15,7 +15,7 @@
     "test:e2e:prod": "PROD=1 playwright test"
   },
   "dependencies": {
-    "@google/genai": "^1.50.1",
+    "@google/genai": "^2.0.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.0",
     "clsx": "^2.1.1",
